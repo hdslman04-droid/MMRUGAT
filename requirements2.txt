@@ -3,3 +3,4 @@ pandas
 openpyxl
 streamlit run app2.py
 pip install pandas streamlit openpyxl
+pdfplumber
