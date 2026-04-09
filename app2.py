@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from pathlib import Path
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # =========================================================
 # PAGE CONFIG
@@ -12,18 +13,24 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)")
-st.caption("Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.")
-
 # =========================================================
-# FILE NAMES
+# FILE PATHS
 # =========================================================
 DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
+LOGO_KPA = "KPA.png"
+LOGO_ATM = "Logo ATM.png"
+LOGO_UGAT = "Logo-UGAT.png"
+CENTER_IMAGE = "FRONT PAAGE.png"
+
 # =========================================================
-# LOAD MAIN DATA
+# HELPER FUNCTIONS
 # =========================================================
+def get_kl_time():
+    kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
+    return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
+
 @st.cache_data
 def load_data():
     file_path = Path(DATA_FILE)
@@ -32,29 +39,21 @@ def load_data():
         st.error(f"Fail '{DATA_FILE}' tidak dijumpai. Pastikan fail ini berada dalam folder yang sama dengan app.py.")
         st.stop()
 
-    # Baca CSV asal
     df_raw = pd.read_csv(file_path, encoding="cp1252", header=None)
 
-    # Header sebenar berada pada baris ke-3 (index 2)
+    # Header sebenar pada baris ke-3
     headers = df_raw.iloc[2].tolist()
     df = df_raw.iloc[3:].copy()
     df.columns = headers
 
-    # Buang baris kosong
     df = df.dropna(how="all").reset_index(drop=True)
-
-    # Bersihkan nama kolum
     df.columns = [str(col).strip() for col in df.columns]
 
-    # Bersihkan isi data
     for col in df.columns:
         df[col] = df[col].fillna("").astype(str).str.strip()
 
     return df
 
-# =========================================================
-# LOAD / CREATE ATTENDANCE DATA
-# =========================================================
 def load_attendance():
     file_path = Path(ATTENDANCE_FILE)
 
@@ -79,13 +78,17 @@ def load_attendance():
 def save_attendance(attendance_df):
     attendance_df.to_csv(ATTENDANCE_FILE, index=False)
 
+def show_image_if_exists(image_path, width=None, use_container_width=False):
+    path = Path(image_path)
+    if path.exists():
+        st.image(str(path), width=width, use_container_width=use_container_width)
+
 # =========================================================
-# MAIN DATA
+# LOAD DATA
 # =========================================================
 df = load_data()
 attendance_df = load_attendance()
 
-# Pastikan kolum wajib wujud
 required_cols = [
     "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
     "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
@@ -97,15 +100,53 @@ if missing_cols:
     st.stop()
 
 # =========================================================
+# TOP DASHBOARD LOGOS
+# =========================================================
+top_left, top_center, top_right = st.columns([1, 1, 1])
+
+with top_left:
+    show_image_if_exists(LOGO_KPA, width=220)
+
+with top_center:
+    show_image_if_exists(LOGO_ATM, width=220)
+
+with top_right:
+    show_image_if_exists(LOGO_UGAT, width=220)
+
+# =========================================================
+# TITLE + TIME
+# =========================================================
+st.markdown("<h1 style='text-align: center;'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</p>", unsafe_allow_html=True)
+
+current_time = get_kl_time()
+st.markdown(
+    f"""
+    <div style='text-align:center; font-size:18px; font-weight:600; margin-bottom:20px;'>
+        Masa Terkini Kuala Lumpur, Malaysia: {current_time}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# =========================================================
+# CENTER IMAGE
+# =========================================================
+left_space, center_space, right_space = st.columns([1, 3, 1])
+with center_space:
+    show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+
+st.markdown("---")
+
+# =========================================================
 # SIDEBAR
 # =========================================================
 st.sidebar.header("Carian Kehadiran")
 search_no = st.sidebar.text_input("Masukkan No Tentera")
-
 show_attendance = st.sidebar.checkbox("Papar senarai kehadiran", value=False)
 
 # =========================================================
-# SEARCH RESULT
+# SEARCH SECTION
 # =========================================================
 if search_no:
     result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
@@ -116,7 +157,7 @@ if search_no:
         st.success(f"{len(result_df)} rekod dijumpai.")
 
         for idx, row in result_df.iterrows():
-            no_ten = row["NO TEN"]
+            no_ten = str(row["NO TEN"]).strip()
             nama = row["NAMA PENUH"]
 
             st.markdown("---")
@@ -137,10 +178,10 @@ if search_no:
                 st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
                 st.write(f"**Catatan:** {row['CATATAN']}")
 
-            # Semak sama ada sudah hadir
             sudah_hadir = False
-            if not attendance_df.empty:
-                sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
+            if not attendance_df.empty and "NO TEN" in attendance_df.columns:
+                attendance_df["NO TEN"] = attendance_df["NO TEN"].astype(str).str.strip()
+                sudah_hadir = no_ten in attendance_df["NO TEN"].values
 
             if sudah_hadir:
                 st.success("✅ Kehadiran telah ditandakan.")
@@ -159,7 +200,7 @@ if search_no:
                         "MENU PASANGAN": row["MENU PASANGAN"],
                         "CATATAN": row["CATATAN"],
                         "STATUS_KEHADIRAN": "HADIR",
-                        "TARIKH_MASA": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        "TARIKH_MASA": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
                     }])
 
                     attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
