@@ -7,12 +7,64 @@ from zoneinfo import ZoneInfo
 # =========================================================
 # PAGE CONFIG
 # =========================================================
-# ICON (browser tab)
 st.set_page_config(
-    page_title="Sistem Kehadiran",
+    page_title="Sistem Kehadiran MMR KPA (UGAT)",
     page_icon="TDM.png",
-    layout="wide"
+    layout="centered"
 )
+
+# =========================================================
+# CUSTOM CSS FOR MOBILE / CLEAN LAYOUT
+# =========================================================
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 900px;
+}
+
+.host-box {
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #111827;
+    margin-bottom: 12px;
+}
+
+.time-box {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: #f3f4f6;
+    margin-bottom: 18px;
+    color: black;
+}
+
+.center-title {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.center-caption {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding-top: 0.5rem;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # FILE PATHS
@@ -26,6 +78,13 @@ LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "FRONT PAAGE.png"
 
 # =========================================================
+# HOST PASSWORD
+# =========================================================
+# Better: put this in Streamlit secrets
+# st.secrets["HOST_PASSWORD"]
+DEFAULT_HOST_PASSWORD = "host123"
+
+# =========================================================
 # HELPER FUNCTIONS
 # =========================================================
 def get_kl_time():
@@ -37,12 +96,11 @@ def load_data():
     file_path = Path(DATA_FILE)
 
     if not file_path.exists():
-        st.error(f"Fail '{DATA_FILE}' tidak dijumpai. Pastikan fail ini berada dalam folder yang sama dengan app.py.")
+        st.error(f"Fail '{DATA_FILE}' tidak dijumpai.")
         st.stop()
 
     df_raw = pd.read_csv(file_path, encoding="cp1252", header=None)
 
-    # Header sebenar pada baris ke-3
     headers = df_raw.iloc[2].tolist()
     df = df_raw.iloc[3:].copy()
     df.columns = headers
@@ -62,19 +120,17 @@ def load_attendance():
         try:
             attendance_df = pd.read_csv(file_path)
             attendance_df.columns = [str(col).strip() for col in attendance_df.columns]
+            for col in attendance_df.columns:
+                attendance_df[col] = attendance_df[col].astype(str).str.strip()
             return attendance_df
         except Exception:
-            return pd.DataFrame(columns=[
-                "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
-                "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
-                "STATUS_KEHADIRAN", "TARIKH_MASA"
-            ])
-    else:
-        return pd.DataFrame(columns=[
-            "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
-            "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
-            "STATUS_KEHADIRAN", "TARIKH_MASA"
-        ])
+            pass
+
+    return pd.DataFrame(columns=[
+        "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
+        "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
+        "STATUS_KEHADIRAN", "TARIKH_MASA"
+    ])
 
 def save_attendance(attendance_df):
     attendance_df.to_csv(ATTENDANCE_FILE, index=False)
@@ -83,6 +139,19 @@ def show_image_if_exists(image_path, width=None, use_container_width=False):
     path = Path(image_path)
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
+
+def verify_host_password(password_input):
+    try:
+        real_password = st.secrets["HOST_PASSWORD"]
+    except Exception:
+        real_password = DEFAULT_HOST_PASSWORD
+    return password_input == real_password
+
+# =========================================================
+# SESSION STATE
+# =========================================================
+if "host_logged_in" not in st.session_state:
+    st.session_state.host_logged_in = False
 
 # =========================================================
 # LOAD DATA
@@ -101,54 +170,43 @@ if missing_cols:
     st.stop()
 
 # =========================================================
-# TOP DASHBOARD LOGOS
+# TOP LOGOS - MOBILE FRIENDLY
 # =========================================================
-top_left, top_center, top_right = st.columns([1, 1, 1])
+c1, c2, c3 = st.columns(3)
 
-with top_left:
-    show_image_if_exists(LOGO_KPA, width=220)
+with c1:
+    show_image_if_exists(LOGO_KPA, use_container_width=True)
 
-with top_center:
-    show_image_if_exists(LOGO_ATM, width=220)
+with c2:
+    show_image_if_exists(LOGO_ATM, use_container_width=True)
 
-with top_right:
-    show_image_if_exists(LOGO_UGAT, width=220)
+with c3:
+    show_image_if_exists(LOGO_UGAT, use_container_width=True)
 
 # =========================================================
 # TITLE + TIME
 # =========================================================
-st.markdown("<h1 style='text-align: center;'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</p>", unsafe_allow_html=True)
+st.markdown("<h2 class='center-title'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h2>", unsafe_allow_html=True)
+st.markdown("<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>", unsafe_allow_html=True)
 
-current_time = get_kl_time()
 st.markdown(
-    f"""
-    <div style='text-align:center; font-size:18px; font-weight:600; margin-bottom:20px;'>
-        Masa Terkini Kuala Lumpur, Malaysia: {current_time}
-    </div>
-    """,
+    f"<div class='time-box'>Masa Terkini Kuala Lumpur, Malaysia: {get_kl_time()}</div>",
     unsafe_allow_html=True
 )
 
 # =========================================================
 # CENTER IMAGE
 # =========================================================
-left_space, center_space, right_space = st.columns([1, 3, 1])
-with center_space:
-    show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
 st.markdown("---")
 
 # =========================================================
-# SIDEBAR
-# =========================================================
-st.sidebar.header("Carian Kehadiran")
-search_no = st.sidebar.text_input("Masukkan No Tentera")
-show_attendance = st.sidebar.checkbox("Papar senarai kehadiran", value=False)
-
-# =========================================================
 # SEARCH SECTION
 # =========================================================
+st.subheader("Carian Kehadiran")
+search_no = st.text_input("Masukkan No Tentera")
+
 if search_no:
     result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
 
@@ -162,34 +220,25 @@ if search_no:
             nama = row["NAMA PENUH"]
 
             st.markdown("---")
-            st.subheader(f"Maklumat Pegawai: {nama}")
+            st.markdown(f"### {nama}")
 
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.write(f"**No Tentera:** {row['NO TEN']}")
-                st.write(f"**Pangkat:** {row['PKT']}")
-                st.write(f"**Nama Penuh:** {row['NAMA PENUH']}")
-                st.write(f"**Pasukan:** {row['PASUKAN']}")
-                st.write(f"**Jawatan:** {row['JAWATAN']}")
-
-            with col2:
-                st.write(f"**Menu:** {row['MENU']}")
-                st.write(f"**Pasangan:** {row['PASANGAN']}")
-                st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-                st.write(f"**Catatan:** {row['CATATAN']}")
+            st.write(f"**No Tentera:** {row['NO TEN']}")
+            st.write(f"**Pangkat:** {row['PKT']}")
+            st.write(f"**Pasukan:** {row['PASUKAN']}")
+            st.write(f"**Jawatan:** {row['JAWATAN']}")
+            st.write(f"**Menu:** {row['MENU']}")
+            st.write(f"**Pasangan:** {row['PASANGAN']}")
+            st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
+            st.write(f"**Catatan:** {row['CATATAN']}")
 
             sudah_hadir = False
             if not attendance_df.empty and "NO TEN" in attendance_df.columns:
-                attendance_df["NO TEN"] = attendance_df["NO TEN"].astype(str).str.strip()
-                sudah_hadir = no_ten in attendance_df["NO TEN"].values
+                sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
 
             if sudah_hadir:
                 st.success("✅ Kehadiran telah ditandakan.")
             else:
-                button_key = f"submit_{idx}_{no_ten}"
-
-                if st.button("Submit / Tandakan Kehadiran", key=button_key):
+                if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
                     new_record = pd.DataFrame([{
                         "NO TEN": row["NO TEN"],
                         "NAMA PENUH": row["NAMA PENUH"],
@@ -206,32 +255,44 @@ if search_no:
 
                     attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
                     save_attendance(attendance_df)
-
                     st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
                     st.rerun()
-
-        st.markdown("### Paparan Jadual Rekod Dijumpai")
-        st.dataframe(
-            result_df[[
-                "NO TEN", "PKT", "NAMA PENUH", "PASUKAN",
-                "JAWATAN", "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
-            ]],
-            use_container_width=True
-        )
 else:
-    st.info("Sila masukkan No Tentera di bahagian kiri untuk membuat carian.")
+    st.info("Sila masukkan No Tentera untuk membuat carian.")
+
+st.markdown("---")
 
 # =========================================================
-# ATTENDANCE LIST
+# HOST ONLY SECTION
 # =========================================================
-if show_attendance:
-    st.markdown("---")
-    st.header("📋 Senarai Kehadiran")
+st.subheader("Host Access")
+
+if not st.session_state.host_logged_in:
+    host_password_input = st.text_input("Masukkan kata laluan host untuk lihat live attendance", type="password")
+
+    if st.button("Login Host"):
+        if verify_host_password(host_password_input):
+            st.session_state.host_logged_in = True
+            st.success("Login host berjaya.")
+            st.rerun()
+        else:
+            st.error("Kata laluan host salah.")
+else:
+    st.success("Anda login sebagai host.")
+
+    if st.button("Logout Host"):
+        st.session_state.host_logged_in = False
+        st.rerun()
+
+    st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
     if attendance_df.empty:
         st.warning("Belum ada rekod kehadiran.")
     else:
         st.dataframe(attendance_df, use_container_width=True)
+
+        total_hadir = len(attendance_df)
+        st.info(f"Jumlah Kehadiran Semasa: {total_hadir}")
 
         csv_data = attendance_df.to_csv(index=False).encode("utf-8")
         st.download_button(
