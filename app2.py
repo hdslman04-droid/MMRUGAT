@@ -17,7 +17,7 @@ st.set_page_config(
 # BANNER (besar dalam page)
 col1, col2, col3 = st.columns([1, 5, 1])
 with col2:
-    st.image("TDM.png", width=900)
+    st.image("TDM.png", width=100)
 
 # =========================================================
 # FILE PATHS
