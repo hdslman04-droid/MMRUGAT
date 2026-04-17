@@ -3,17 +3,6 @@ import streamlit as st
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
-# ============================
-# SETTINGS
-# ============================
-MAX_CAPACITY = 252
-MIN_CAPACITY = 188
-ROWS = 6
-MIN_ROW = 15
-MAX_ROW = 20
 
 # ============================
 # PAGE CONFIG
@@ -30,15 +19,14 @@ st.set_page_config(
 DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
-LOGO_KPA = "KPA.png"
-LOGO_ATM = "Logo ATM.png"
-LOGO_UGAT = "Logo-UGAT.png"
-CENTER_IMAGE = "FRONT PAAGE.png"
-
 # ============================
-# HOST PASSWORD
+# SEATING CONFIGURATION
 # ============================
-DEFAULT_HOST_PASSWORD = "host123"
+MAX_CAPACITY = 252
+MIN_CAPACITY = 188
+ROWS = 6
+MIN_ROW = 15
+MAX_ROW = 20
 
 # ============================
 # HELPER FUNCTIONS
@@ -74,30 +62,6 @@ def show_image_if_exists(image_path, width=None, use_container_width=False):
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
 
-def verify_host_password(password_input):
-    return password_input == DEFAULT_HOST_PASSWORD
-
-def generate_seating_layout(total_capacity, high_table_capacity, remaining_capacity, people_per_row, rows_needed):
-    fig, ax = plt.subplots(figsize=(14, 8))
-    ax.add_patch(patches.Rectangle((0, 5), 3, 1, linewidth=2, edgecolor='yellow', facecolor='yellow', label="High Table"))
-    ax.text(1.5, 5.5, f"High Table ({high_table_capacity})", horizontalalignment='center', fontsize=12, color='black', weight='bold')
-
-    for i in range(rows_needed):
-        ax.add_patch(patches.Rectangle((0, 4-i), 3, 1, linewidth=2, edgecolor='yellow', facecolor='yellow'))
-        ax.text(1.5, 4-i+0.5, f"Row {i+1} ({people_per_row})", horizontalalignment='center', fontsize=10, color='black', weight='bold')
-
-    for i in range(rows_needed):
-        for j in range(people_per_row):
-            ax.add_patch(patches.Rectangle((j * 0.5, 4-i), 0.5, 0.7, linewidth=1, edgecolor='black', facecolor='white'))
-            ax.text(j * 0.5 + 0.25, 4-i+0.3, f"Seat {j+1}", horizontalalignment='center', fontsize=8, color='black')
-
-    ax.set_xlim(-1, 3)
-    ax.set_ylim(-1, 6)
-    ax.axis('off')
-    ax.set_title(f"Seating Layout for {total_capacity} people", fontsize=16, weight="bold", color="yellow")
-
-    return fig
-
 # ============================
 # UI COMPONENTS
 # ============================
@@ -110,31 +74,21 @@ st.markdown(f"**Masa Terkini Kuala Lumpur, Malaysia:** {get_kl_time()}", unsafe_
 # ============================
 st.subheader("Adjust Seating Capacity")
 
+total_capacity = st.slider("Adjust Total Capacity", min_value=MIN_CAPACITY, max_value=MAX_CAPACITY, value=MAX_CAPACITY)
 high_table_capacity = st.slider("Adjust High Table Capacity", min_value=8, max_value=12, value=8)
 
 # Calculate remaining capacity
-remaining_capacity = MAX_CAPACITY - high_table_capacity  # Total capacity (252) is fixed
-
+remaining_capacity = total_capacity - high_table_capacity
 people_per_row = st.slider("People per Row", min_value=MIN_ROW, max_value=MAX_ROW, value=MIN_ROW)
 
 # Calculate rows based on remaining capacity
 rows_needed = max(remaining_capacity // people_per_row, 1)
-
-# Calculate total capacity automatically
-total_capacity = high_table_capacity + (people_per_row * rows_needed)
 
 # Show results of seating configuration
 st.write(f"High Table Capacity: {high_table_capacity} people")
 st.write(f"Remaining Capacity: {remaining_capacity} people")
 st.write(f"People per Row: {people_per_row}")
 st.write(f"Number of Rows Required: {rows_needed}")
-st.write(f"Total Capacity: {total_capacity} people")
-
-# ============================
-# DISPLAY SEATING LAYOUT
-# ============================
-fig = generate_seating_layout(total_capacity, high_table_capacity, remaining_capacity, people_per_row, rows_needed)
-st.pyplot(fig)
 
 # ============================
 # SEARCH SECTION (For Attendance)
@@ -179,47 +133,3 @@ if search_no:
                 save_attendance(attendance_df)
                 st.success(f"Kehadiran bagi {row['NAMA PENUH']} berjaya direkodkan.")
                 st.rerun()
-else:
-    st.info("Sila masukkan No Tentera untuk membuat carian.")
-
-st.markdown("---")
-
-# ============================
-# HOST ONLY SECTION
-# ============================
-st.subheader("Host Access")
-
-if not st.session_state.host_logged_in:
-    host_password_input = st.text_input("Masukkan kata laluan host untuk lihat live attendance", type="password")
-
-    if st.button("Login Host"):
-        if verify_host_password(host_password_input):
-            st.session_state.host_logged_in = True
-            st.success("Login host berjaya.")
-            st.rerun()
-        else:
-            st.error("Kata laluan host salah.")
-else:
-    st.success("Anda login sebagai host.")
-
-    if st.button("Logout Host"):
-        st.session_state.host_logged_in = False
-        st.rerun()
-
-    st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
-
-    if attendance_df.empty:
-        st.warning("Belum ada rekod kehadiran.")
-    else:
-        st.dataframe(attendance_df, use_container_width=True)
-
-        total_hadir = len(attendance_df)
-        st.info(f"Jumlah Kehadiran Semasa: {total_hadir}")
-
-        csv_data = attendance_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Muat Turun Rekod Kehadiran",
-            data=csv_data,
-            file_name="attendance_records.csv",
-            mime="text/csv"
-        )
