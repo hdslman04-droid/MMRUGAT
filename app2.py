@@ -3,6 +3,8 @@ import streamlit as st
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # ============================
 # PAGE CONFIG
@@ -19,14 +21,10 @@ st.set_page_config(
 DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
-# ============================
-# SEATING CONFIGURATION
-# ============================
-MAX_CAPACITY = 252
-MIN_CAPACITY = 188
-ROWS = 6
-MIN_ROW = 15
-MAX_ROW = 20
+LOGO_KPA = "KPA.png"
+LOGO_ATM = "Logo ATM.png"
+LOGO_UGAT = "Logo-UGAT.png"
+CENTER_IMAGE = "FRONT PAAGE.png"
 
 # ============================
 # HELPER FUNCTIONS
@@ -62,33 +60,15 @@ def show_image_if_exists(image_path, width=None, use_container_width=False):
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
 
+def verify_host_password(password_input):
+    return password_input == "host123"
+
 # ============================
 # UI COMPONENTS
 # ============================
 st.markdown("<h1 style='text-align: center;'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</p>", unsafe_allow_html=True)
 st.markdown(f"**Masa Terkini Kuala Lumpur, Malaysia:** {get_kl_time()}", unsafe_allow_html=True)
-
-# ============================
-# SEATING CAPACITY ADJUSTMENT
-# ============================
-st.subheader("Adjust Seating Capacity")
-
-total_capacity = st.slider("Adjust Total Capacity", min_value=MIN_CAPACITY, max_value=MAX_CAPACITY, value=MAX_CAPACITY)
-high_table_capacity = st.slider("Adjust High Table Capacity", min_value=8, max_value=12, value=8)
-
-# Calculate remaining capacity
-remaining_capacity = total_capacity - high_table_capacity
-people_per_row = st.slider("People per Row", min_value=MIN_ROW, max_value=MAX_ROW, value=MIN_ROW)
-
-# Calculate rows based on remaining capacity
-rows_needed = max(remaining_capacity // people_per_row, 1)
-
-# Show results of seating configuration
-st.write(f"High Table Capacity: {high_table_capacity} people")
-st.write(f"Remaining Capacity: {remaining_capacity} people")
-st.write(f"People per Row: {people_per_row}")
-st.write(f"Number of Rows Required: {rows_needed}")
 
 # ============================
 # SEARCH SECTION (For Attendance)
@@ -103,6 +83,9 @@ if search_no:
 
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
+        # Option to re-enter No Tentera
+        if st.button("Re-enter No Tentera"):
+            st.experimental_rerun()
     else:
         st.success(f"{len(result_df)} rekod dijumpai.")
         for idx, row in result_df.iterrows():
@@ -114,22 +97,72 @@ if search_no:
             st.write(f"**Pasangan:** {row['PASANGAN']}")
             st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
 
+            # Image based on attendance or failure
+            show_image_if_exists("attendance_image.png", use_container_width=True)
+
             # Kehadiran Status
             if st.button(f"Tandakan Kehadiran {row['NAMA PENUH']}", key=f"submit_{idx}_{no_ten}"):
-                new_record = pd.DataFrame([{
-                    "NO TEN": row["NO TEN"],
-                    "NAMA PENUH": row["NAMA PENUH"],
-                    "PKT": row["PKT"],
-                    "PASUKAN": row["PASUKAN"],
-                    "JAWATAN": row["JAWATAN"],
-                    "MENU": row["MENU"],
-                    "PASANGAN": row["PASANGAN"],
-                    "MENU PASANGAN": row["MENU PASANGAN"],
-                    "CATATAN": row["CATATAN"],
-                    "STATUS_KEHADIRAN": "HADIR",
-                    "TARIKH_MASA": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
-                }])
-                attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
-                save_attendance(attendance_df)
-                st.success(f"Kehadiran bagi {row['NAMA PENUH']} berjaya direkodkan.")
-                st.rerun()
+                if no_ten in attendance_df["NO TEN"].astype(str).values:
+                    st.warning("Attendance already submitted!")
+                else:
+                    new_record = pd.DataFrame([{
+                        "NO TEN": row["NO TEN"],
+                        "NAMA PENUH": row["NAMA PENUH"],
+                        "PKT": row["PKT"],
+                        "PASUKAN": row["PASUKAN"],
+                        "JAWATAN": row["JAWATAN"],
+                        "MENU": row["MENU"],
+                        "PASANGAN": row["PASANGAN"],
+                        "MENU PASANGAN": row["MENU PASANGAN"],
+                        "CATATAN": row["CATATAN"],
+                        "STATUS_KEHADIRAN": "HADIR",
+                        "TARIKH_MASA": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
+                    }])
+                    attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
+                    save_attendance(attendance_df)
+                    st.success(f"Kehadiran bagi {row['NAMA PENUH']} berjaya direkodkan.")
+                    st.experimental_rerun()
+else:
+    st.info("Sila masukkan No Tentera untuk membuat carian.")
+
+st.markdown("---")
+
+# ============================
+# HOST ONLY SECTION
+# ============================
+st.subheader("Host Access")
+
+if not st.session_state.host_logged_in:
+    host_password_input = st.text_input("Masukkan kata laluan host untuk lihat live attendance", type="password")
+
+    if st.button("Login Host"):
+        if verify_host_password(host_password_input):
+            st.session_state.host_logged_in = True
+            st.success("Login host berjaya.")
+            st.experimental_rerun()
+        else:
+            st.error("Kata laluan host salah.")
+else:
+    st.success("Anda login sebagai host.")
+
+    if st.button("Logout Host"):
+        st.session_state.host_logged_in = False
+        st.experimental_rerun()
+
+    st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
+
+    if attendance_df.empty:
+        st.warning("Belum ada rekod kehadiran.")
+    else:
+        st.dataframe(attendance_df, use_container_width=True)
+
+        total_hadir = len(attendance_df)
+        st.info(f"Jumlah Kehadiran Semasa: {total_hadir}")
+
+        csv_data = attendance_df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Muat Turun Rekod Kehadiran",
+            data=csv_data,
+            file_name="attendance_records.csv",
+            mime="text/csv"
+        )
