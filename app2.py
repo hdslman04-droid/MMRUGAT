@@ -8,70 +8,15 @@ from zoneinfo import ZoneInfo
 # PAGE CONFIG
 # ============================
 st.set_page_config(
-    page_title="Sistem Kehadiran MMR KPA (GAJI)",
-    page_icon="TDM.png",
+    page_title="Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)",
+    page_icon="TDM.png",  # Use actual image file for app icon
     layout="centered"
 )
 
 # ============================
-# CUSTOM CSS FOR MOBILE / CLEAN LAYOUT
-# ============================
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 2rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    max-width: 900px;
-}
-
-.host-box {
-    padding: 12px;
-    border-radius: 10px;
-    background-color: #111827;
-    margin-bottom: 12px;
-}
-
-.time-box {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 600;
-    padding: 10px;
-    border-radius: 10px;
-    background-color: #f3f4f6;
-    margin-bottom: 18px;
-    color: black;
-}
-
-.center-title {
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 5px;
-}
-
-.center-caption {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #555;
-}
-
-@media (max-width: 640px) {
-    .block-container {
-        padding-top: 0.5rem;
-        padding-left: 0.7rem;
-        padding-right: 0.7rem;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ============================
 # FILE PATHS
 # ============================
-DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
-
 LOGO_KPA = "KPA.png"
 LOGO_ATM = "Logo ATM.png"
 LOGO_UGAT = "Logo-UGAT.png"
@@ -89,12 +34,14 @@ def get_kl_time():
     kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
     return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
 
-@st.cache_data
-def load_data(files):
+def load_data_from_files(files):
     """Load data from multiple files into a single DataFrame."""
     all_data = []
     for file in files:
-        df = pd.read_csv(file)
+        try:
+            df = pd.read_csv(file, encoding='utf-8')  # Try UTF-8 encoding first
+        except UnicodeDecodeError:
+            df = pd.read_csv(file, encoding='latin1')  # Fallback to latin1 encoding
         all_data.append(df)
     
     # Concatenate all data into a single DataFrame
@@ -104,22 +51,9 @@ def load_data(files):
 def load_attendance():
     """Load attendance records from a CSV file."""
     file_path = Path(ATTENDANCE_FILE)
-
     if file_path.exists():
-        try:
-            attendance_df = pd.read_csv(file_path)
-            attendance_df.columns = [str(col).strip() for col in attendance_df.columns]
-            for col in attendance_df.columns:
-                attendance_df[col] = attendance_df[col].astype(str).str.strip()
-            return attendance_df
-        except Exception:
-            pass
-
-    return pd.DataFrame(columns=[
-        "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
-        "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
-        "STATUS_KEHADIRAN", "TARIKH_MASA"
-    ])
+        return pd.read_csv(file_path)
+    return pd.DataFrame(columns=["NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN", "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN", "STATUS_KEHADIRAN", "TARIKH_MASA"])
 
 def save_attendance(attendance_df):
     """Save the updated attendance data to a CSV file."""
@@ -130,6 +64,8 @@ def show_image_if_exists(image_path, width=None, use_container_width=False):
     path = Path(image_path)
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
+    else:
+        st.error(f"Image file '{image_path}' not found!")
 
 def verify_host_password(password_input):
     """Verify host password."""
@@ -155,7 +91,7 @@ uploaded_files = st.sidebar.file_uploader("Upload CSV Files", accept_multiple_fi
 
 if uploaded_files:
     st.write(f"Total {len(uploaded_files)} file(s) uploaded.")
-    combined_data = load_data(uploaded_files)
+    combined_data = load_data_from_files(uploaded_files)
     st.dataframe(combined_data)
 else:
     st.info("Please upload at least one CSV file.")
