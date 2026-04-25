@@ -156,6 +156,8 @@ if "host_logged_in" not in st.session_state:
 # =========================================================
 # LOAD DATA
 # =========================================================
+
+uploaded_files = st.sidebar.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
 df = load_data()
 attendance_df = load_attendance()
 
