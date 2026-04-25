@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 # PAGE CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="Sistem Kehadiran MMR KPA (UGAT)",
+    page_title="Sistem Kehadiran MMR KPA (GAJI)",
     page_icon="TDM.png",
     layout="centered"
 )
