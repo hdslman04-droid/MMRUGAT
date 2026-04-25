@@ -4,18 +4,18 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-# =========================================================
+# ============================
 # PAGE CONFIG
-# =========================================================
+# ============================
 st.set_page_config(
     page_title="Sistem Kehadiran MMR KPA (GAJI)",
     page_icon="TDM.png",
     layout="centered"
 )
 
-# =========================================================
+# ============================
 # CUSTOM CSS FOR MOBILE / CLEAN LAYOUT
-# =========================================================
+# ============================
 st.markdown("""
 <style>
 .block-container {
@@ -66,9 +66,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================================
+# ============================
 # FILE PATHS
-# =========================================================
+# ============================
 DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
@@ -77,14 +77,14 @@ LOGO_ATM = "Logo ATM.png"
 LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "FRONT PAAGE.png"
 
-# =========================================================
+# ============================
 # HOST PASSWORD
-# =========================================================
+# ============================
 DEFAULT_HOST_PASSWORD = "host123"
 
-# =========================================================
+# ============================
 # HELPER FUNCTIONS
-# =========================================================
+# ============================
 def get_kl_time():
     kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
     return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
