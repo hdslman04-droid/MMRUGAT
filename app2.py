@@ -4,72 +4,18 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-# =========================================================
+# ============================
 # PAGE CONFIG
-# =========================================================
+# ============================
 st.set_page_config(
-    page_title="Sistem Kehadiran MMR KPA (GAJI)",
-    page_icon="TDM.png",
+    page_title="Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)",
+    page_icon="TDM.png",  # Use custom icon (optional)
     layout="centered"
 )
 
-# =========================================================
-# CUSTOM CSS FOR MOBILE / CLEAN LAYOUT
-# =========================================================
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 2rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    max-width: 900px;
-}
-
-.host-box {
-    padding: 12px;
-    border-radius: 10px;
-    background-color: #111827;
-    margin-bottom: 12px;
-}
-
-.time-box {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 600;
-    padding: 10px;
-    border-radius: 10px;
-    background-color: #f3f4f6;
-    margin-bottom: 18px;
-    color: black;
-}
-
-.center-title {
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 5px;
-}
-
-.center-caption {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #555;
-}
-
-@media (max-width: 640px) {
-    .block-container {
-        padding-top: 0.5rem;
-        padding-left: 0.7rem;
-        padding-right: 0.7rem;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =========================================================
+# ============================
 # FILE PATHS
-# =========================================================
-DATA_FILE = "SEATING_PLAN.csv"
+# ============================
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_KPA = "KPA.png"
@@ -77,168 +23,106 @@ LOGO_ATM = "Logo ATM.png"
 LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "FRONT PAAGE.png"
 
-# =========================================================
+# ============================
 # HOST PASSWORD
-# =========================================================
-# Better: put this in Streamlit secrets
-# st.secrets["HOST_PASSWORD"]
-DEFAULT_HOST_PASSWORD = "salman04"
+# ============================
+DEFAULT_HOST_PASSWORD = "host123"
 
-# =========================================================
+# ============================
 # HELPER FUNCTIONS
-# =========================================================
+# ============================
 def get_kl_time():
     kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
     return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
 
-@st.cache_data
-def load_data():
-    file_path = Path(DATA_FILE)
-
-    if not file_path.exists():
-        st.error(f"Fail '{DATA_FILE}' tidak dijumpai.")
-        st.stop()
-
-    df_raw = pd.read_csv(file_path, encoding="cp1252", header=None)
-
-    headers = df_raw.iloc[2].tolist()
-    df = df_raw.iloc[3:].copy()
-    df.columns = headers
-
-    df = df.dropna(how="all").reset_index(drop=True)
-    df.columns = [str(col).strip() for col in df.columns]
-
-    for col in df.columns:
-        df[col] = df[col].fillna("").astype(str).str.strip()
-
-    return df
+def load_data_from_files(files):
+    """Load data from multiple files into a single DataFrame."""
+    all_data = []
+    for file in files:
+        df = pd.read_csv(file)
+        all_data.append(df)
+    
+    # Concatenate all data into a single DataFrame
+    combined_data = pd.concat(all_data, ignore_index=True)
+    return combined_data
 
 def load_attendance():
+    """Load attendance records from a CSV file."""
     file_path = Path(ATTENDANCE_FILE)
-
     if file_path.exists():
-        try:
-            attendance_df = pd.read_csv(file_path)
-            attendance_df.columns = [str(col).strip() for col in attendance_df.columns]
-            for col in attendance_df.columns:
-                attendance_df[col] = attendance_df[col].astype(str).str.strip()
-            return attendance_df
-        except Exception:
-            pass
-
-    return pd.DataFrame(columns=[
-        "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
-        "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
-        "STATUS_KEHADIRAN", "TARIKH_MASA"
-    ])
+        return pd.read_csv(file_path)
+    return pd.DataFrame(columns=["NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN", "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN", "STATUS_KEHADIRAN", "TARIKH_MASA"])
 
 def save_attendance(attendance_df):
+    """Save the updated attendance data to a CSV file."""
     attendance_df.to_csv(ATTENDANCE_FILE, index=False)
 
 def show_image_if_exists(image_path, width=None, use_container_width=False):
+    """Display image if it exists."""
     path = Path(image_path)
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
 
 def verify_host_password(password_input):
-    try:
-        real_password = st.secrets["HOST_PASSWORD"]
-    except Exception:
-        real_password = DEFAULT_HOST_PASSWORD
-    return password_input == real_password
+    """Verify host password."""
+    return password_input == DEFAULT_HOST_PASSWORD
 
-# =========================================================
+# ============================
 # SESSION STATE
-# =========================================================
+# ============================
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
 
-# =========================================================
-# LOAD DATA
-# =========================================================
-df = load_data()
-attendance_df = load_attendance()
+# ============================
+# UI COMPONENTS
+# ============================
+st.markdown("<h1 style='text-align: center;'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</p>", unsafe_allow_html=True)
+st.markdown(f"**Masa Terkini Kuala Lumpur, Malaysia:** {get_kl_time()}", unsafe_allow_html=True)
 
-required_cols = [
-    "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
-    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
-]
+# ============================
+# MULTIPLE FILE UPLOAD
+# ============================
+uploaded_files = st.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
 
-missing_cols = [col for col in required_cols if col not in df.columns]
-if missing_cols:
-    st.error(f"Kolum berikut tiada dalam fail CSV: {missing_cols}")
-    st.stop()
+if uploaded_files:
+    st.write(f"Total {len(uploaded_files)} file(s) uploaded.")
+    combined_data = load_data_from_files(uploaded_files)
+    st.dataframe(combined_data)
+else:
+    st.info("Please upload at least one CSV file.")
 
-# =========================================================
-# TOP LOGOS - MOBILE FRIENDLY
-# =========================================================
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    show_image_if_exists(LOGO_KPA, use_container_width=True)
-
-with c2:
-    show_image_if_exists(LOGO_ATM, use_container_width=True)
-
-with c3:
-    show_image_if_exists(LOGO_UGAT, use_container_width=True)
-
-# =========================================================
-# TITLE + TIME
-# =========================================================
-st.markdown("<h2 class='center-title'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h2>", unsafe_allow_html=True)
-st.markdown("<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>", unsafe_allow_html=True)
-
-st.markdown(
-    f"<div class='time-box'>Masa Terkini Kuala Lumpur, Malaysia: {get_kl_time()}</div>",
-    unsafe_allow_html=True
-)
-
-# =========================================================
-# CENTER IMAGE
-# =========================================================
-show_image_if_exists(CENTER_IMAGE, use_container_width=True)
-
-st.markdown("---")
-
-# =========================================================
-# SEARCH SECTION
-# =========================================================
-st.subheader("Carian Kehadiran")
+# ============================
+# SEARCH SECTION (For Attendance)
+# ============================
 search_no = st.text_input("Masukkan No Tentera")
 
-if search_no:
+df = combined_data if uploaded_files else pd.DataFrame()
+attendance_df = load_attendance()
+
+if search_no and not df.empty:
     result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
 
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
+        if st.button("Re-enter No Tentera"):
+            st.experimental_rerun()
     else:
         st.success(f"{len(result_df)} rekod dijumpai.")
-
         for idx, row in result_df.iterrows():
             no_ten = str(row["NO TEN"]).strip()
-            nama = row["NAMA PENUH"]
-
-            st.markdown("---")
-            st.markdown(f"### {nama}")
-
+            st.write(f"**Nama:** {row['NAMA PENUH']}")
             st.write(f"**No Tentera:** {row['NO TEN']}")
             st.write(f"**Pangkat:** {row['PKT']}")
-            st.write(f"**Pasukan:** {row['PASUKAN']}")
-            st.write(f"**Jawatan:** {row['JAWATAN']}")
             st.write(f"**Menu:** {row['MENU']}")
             st.write(f"**Pasangan:** {row['PASANGAN']}")
             st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-            st.write(f"**Catatan:** {row['CATATAN']}")
 
-            sudah_hadir = False
-            if not attendance_df.empty and "NO TEN" in attendance_df.columns:
-                sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
-
-            if sudah_hadir:
-                st.success("✅ Kehadiran telah ditandakan.")
-            else:
-                if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
+            # Kehadiran Status
+            if st.button(f"Tandakan Kehadiran {row['NAMA PENUH']}", key=f"submit_{idx}_{no_ten}"):
+                if no_ten in attendance_df["NO TEN"].astype(str).values:
+                    st.warning("Attendance already submitted!")
+                else:
                     new_record = pd.DataFrame([{
                         "NO TEN": row["NO TEN"],
                         "NAMA PENUH": row["NAMA PENUH"],
@@ -252,19 +136,18 @@ if search_no:
                         "STATUS_KEHADIRAN": "HADIR",
                         "TARIKH_MASA": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
                     }])
-
                     attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
                     save_attendance(attendance_df)
-                    st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
-                    st.rerun()
+                    st.success(f"Kehadiran bagi {row['NAMA PENUH']} berjaya direkodkan.")
+                    st.experimental_rerun()
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
 
 st.markdown("---")
 
-# =========================================================
+# ============================
 # HOST ONLY SECTION
-# =========================================================
+# ============================
 st.subheader("Host Access")
 
 if not st.session_state.host_logged_in:
@@ -274,7 +157,7 @@ if not st.session_state.host_logged_in:
         if verify_host_password(host_password_input):
             st.session_state.host_logged_in = True
             st.success("Login host berjaya.")
-            st.rerun()
+            st.experimental_rerun()
         else:
             st.error("Kata laluan host salah.")
 else:
@@ -282,7 +165,7 @@ else:
 
     if st.button("Logout Host"):
         st.session_state.host_logged_in = False
-        st.rerun()
+        st.experimental_rerun()
 
     st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
