@@ -3,12 +3,14 @@ import streamlit as st
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # ============================
 # PAGE CONFIG
 # ============================
 st.set_page_config(
-    page_title="Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)",
+    page_title="Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)",
     page_icon="TDM.png",  # Use custom icon (optional)
     layout="centered"
 )
@@ -22,11 +24,6 @@ LOGO_KPA = "KPA.png"
 LOGO_ATM = "Logo ATM.png"
 LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "FRONT PAAGE.png"
-
-# ============================
-# HOST PASSWORD
-# ============================
-DEFAULT_HOST_PASSWORD = "host123"
 
 # ============================
 # HELPER FUNCTIONS
@@ -65,7 +62,7 @@ def show_image_if_exists(image_path, width=None, use_container_width=False):
 
 def verify_host_password(password_input):
     """Verify host password."""
-    return password_input == DEFAULT_HOST_PASSWORD
+    return password_input == "host123"
 
 # ============================
 # SESSION STATE
@@ -83,7 +80,7 @@ st.markdown(f"**Masa Terkini Kuala Lumpur, Malaysia:** {get_kl_time()}", unsafe_
 # ============================
 # MULTIPLE FILE UPLOAD
 # ============================
-uploaded_files = st.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
+uploaded_files = st.sidebar.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
 
 if uploaded_files:
     st.write(f"Total {len(uploaded_files)} file(s) uploaded.")
@@ -117,6 +114,9 @@ if search_no and not df.empty:
             st.write(f"**Menu:** {row['MENU']}")
             st.write(f"**Pasangan:** {row['PASANGAN']}")
             st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
+
+            # Image based on attendance or failure
+            show_image_if_exists("attendance_image.png", use_container_width=True)
 
             # Kehadiran Status
             if st.button(f"Tandakan Kehadiran {row['NAMA PENUH']}", key=f"submit_{idx}_{no_ten}"):
