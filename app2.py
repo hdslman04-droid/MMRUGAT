@@ -18,6 +18,7 @@ st.set_page_config(
 # ============================
 # FILE PATHS
 # ============================
+DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_KPA = "KPA.png"
@@ -32,43 +33,35 @@ def get_kl_time():
     kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
     return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
 
-def load_data_from_files(files):
-    """Load data from multiple files into a single DataFrame."""
-    all_data = []
-    for file in files:
-        df = pd.read_csv(file)
-        all_data.append(df)
-    
-    # Concatenate all data into a single DataFrame
-    combined_data = pd.concat(all_data, ignore_index=True)
-    return combined_data
+def load_data():
+    file_path = Path(DATA_FILE)
+    if not file_path.exists():
+        st.error(f"Fail '{DATA_FILE}' tidak dijumpai.")
+        st.stop()
+    df_raw = pd.read_csv(file_path, encoding="cp1252", header=None)
+    headers = df_raw.iloc[2].tolist()
+    df = df_raw.iloc[3:].copy()
+    df.columns = headers
+    df = df.dropna(how="all").reset_index(drop=True)
+    df.columns = [str(col).strip() for col in df.columns]
+    return df
 
 def load_attendance():
-    """Load attendance records from a CSV file."""
     file_path = Path(ATTENDANCE_FILE)
     if file_path.exists():
         return pd.read_csv(file_path)
     return pd.DataFrame(columns=["NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN", "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN", "STATUS_KEHADIRAN", "TARIKH_MASA"])
 
 def save_attendance(attendance_df):
-    """Save the updated attendance data to a CSV file."""
     attendance_df.to_csv(ATTENDANCE_FILE, index=False)
 
 def show_image_if_exists(image_path, width=None, use_container_width=False):
-    """Display image if it exists."""
     path = Path(image_path)
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
 
 def verify_host_password(password_input):
-    """Verify host password."""
     return password_input == "host123"
-
-# ============================
-# SESSION STATE
-# ============================
-if "host_logged_in" not in st.session_state:
-    st.session_state.host_logged_in = False
 
 # ============================
 # UI COMPONENTS
@@ -78,36 +71,25 @@ st.markdown("<p style='text-align: center;'>Masukkan No Tentera untuk semak makl
 st.markdown(f"**Masa Terkini Kuala Lumpur, Malaysia:** {get_kl_time()}", unsafe_allow_html=True)
 
 # ============================
-# MULTIPLE FILE UPLOAD
-# ============================
-uploaded_files = st.sidebar.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
-
-if uploaded_files:
-    st.write(f"Total {len(uploaded_files)} file(s) uploaded.")
-    combined_data = load_data_from_files(uploaded_files)
-    st.dataframe(combined_data)
-else:
-    st.info("Please upload at least one CSV file.")
-
-# ============================
 # SEARCH SECTION (For Attendance)
 # ============================
 search_no = st.text_input("Masukkan No Tentera")
 
-df = combined_data if uploaded_files else pd.DataFrame()
+df = load_data()
 attendance_df = load_attendance()
 
-if search_no and not df.empty:
+if search_no:
     result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
 
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
+        # Option to re-enter No Tentera
         if st.button("Re-enter No Tentera"):
             st.experimental_rerun()
     else:
         st.success(f"{len(result_df)} rekod dijumpai.")
         for idx, row in result_df.iterrows():
-            no_ten = str(row["NO TEN"]).strip()
+            no_ten = row["NO TEN"]
             st.write(f"**Nama:** {row['NAMA PENUH']}")
             st.write(f"**No Tentera:** {row['NO TEN']}")
             st.write(f"**Pangkat:** {row['PKT']}")
