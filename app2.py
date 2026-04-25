@@ -82,7 +82,7 @@ CENTER_IMAGE = "FRONT PAAGE.png"
 # =========================================================
 # Better: put this in Streamlit secrets
 # st.secrets["HOST_PASSWORD"]
-DEFAULT_HOST_PASSWORD = "host123"
+DEFAULT_HOST_PASSWORD = "salman04"
 
 # =========================================================
 # HELPER FUNCTIONS
