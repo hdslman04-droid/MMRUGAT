@@ -218,10 +218,16 @@ if missing_cols:
 # =========================================================
 show_image_if_exists(LOGO_UGAT, width=180)
 
-st.markdown(
-    "<h2 class='center-title'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h2>",
-    unsafe_allow_html=True
-)
+col1, col2 = st.columns([1, 6])
+
+with col1:
+    show_image_if_exists("TDM.png", width=60)
+
+with col2:
+    st.markdown(
+        "<h2 style='margin-top:15px;'>Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)</h2>",
+        unsafe_allow_html=True
+    )
 
 st.markdown(
     "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>",
