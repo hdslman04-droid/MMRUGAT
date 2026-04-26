@@ -227,9 +227,9 @@ def get_base64_image(image_path):
 img_base64 = get_base64_image("Logo-UGAT.png")
 
 st.markdown(f"""
-<div style="display:flex; align-items:center; gap:15px;">
-    <img src="data:image/png;base64,{img_base64}" width="60">
-    <h2 style="margin:0;">
+<div style="display:flex; align-items:center; gap:12px;">
+    <img src="data:image/png;base64,{img_base64}" width="45">
+    <h2 style="margin:0; font-size:26px; line-height:1.2;">
         Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
     </h2>
 </div>
