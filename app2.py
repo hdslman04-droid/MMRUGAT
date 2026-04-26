@@ -4,18 +4,12 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-# =========================================================
-# PAGE CONFIG
-# =========================================================
 st.set_page_config(
     page_title="Sistem Kehadiran MMR KPA (UGAT)",
     page_icon="TDM.png",
     layout="centered"
 )
 
-# =========================================================
-# CUSTOM CSS FOR MOBILE / CLEAN LAYOUT
-# =========================================================
 st.markdown("""
 <style>
 .block-container {
@@ -25,14 +19,6 @@ st.markdown("""
     padding-right: 1rem;
     max-width: 900px;
 }
-
-.host-box {
-    padding: 12px;
-    border-radius: 10px;
-    background-color: #111827;
-    margin-bottom: 12px;
-}
-
 .time-box {
     text-align: center;
     font-size: 16px;
@@ -43,19 +29,16 @@ st.markdown("""
     margin-bottom: 18px;
     color: black;
 }
-
 .center-title {
     text-align: center;
     margin-top: 10px;
     margin-bottom: 5px;
 }
-
 .center-caption {
     text-align: center;
     margin-bottom: 20px;
     color: #555;
 }
-
 @media (max-width: 640px) {
     .block-container {
         padding-top: 0.5rem;
@@ -66,33 +49,36 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================================
-# FILE PATHS
-# =========================================================
 DATA_FILE = "SEATING_PLAN.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
-LOGO_KPA = "KPA.png"
-LOGO_ATM = "Logo ATM.png"
 LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "FRONT PAAGE.png"
 
-# =========================================================
-# HOST PASSWORD
-# =========================================================
-# Better: put this in Streamlit secrets
-# st.secrets["HOST_PASSWORD"]
 DEFAULT_HOST_PASSWORD = "host123"
 
-# =========================================================
-# HELPER FUNCTIONS
-# =========================================================
-def get_kl_time():
-    kl_now = datetime.now(ZoneInfo("Asia/Kuala_Lumpur"))
-    return kl_now.strftime("%d/%m/%Y %I:%M:%S %p")
+required_cols = [
+    "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
+    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
+]
+
+def get_file_updated_time():
+    files_to_check = [DATA_FILE, ATTENDANCE_FILE]
+    existing_files = [Path(f) for f in files_to_check if Path(f).exists()]
+
+    if not existing_files:
+        return "Tiada fail dijumpai"
+
+    latest_file = max(existing_files, key=lambda x: x.stat().st_mtime)
+    latest_time = datetime.fromtimestamp(
+        latest_file.stat().st_mtime,
+        ZoneInfo("Asia/Kuala_Lumpur")
+    )
+
+    return f"{latest_file.name} dikemaskini pada {latest_time.strftime('%d/%m/%Y %I:%M:%S %p')}"
 
 @st.cache_data
-def load_data():
+def load_default_data():
     file_path = Path(DATA_FILE)
 
     if not file_path.exists():
@@ -112,6 +98,26 @@ def load_data():
         df[col] = df[col].fillna("").astype(str).str.strip()
 
     return df
+
+def load_uploaded_files(uploaded_files):
+    all_data = []
+
+    for uploaded_file in uploaded_files:
+        df_raw = pd.read_csv(uploaded_file, encoding="cp1252", header=None)
+
+        headers = df_raw.iloc[2].tolist()
+        df = df_raw.iloc[3:].copy()
+        df.columns = headers
+
+        df = df.dropna(how="all").reset_index(drop=True)
+        df.columns = [str(col).strip() for col in df.columns]
+
+        for col in df.columns:
+            df[col] = df[col].fillna("").astype(str).str.strip()
+
+        all_data.append(df)
+
+    return pd.concat(all_data, ignore_index=True)
 
 def load_attendance():
     file_path = Path(ATTENDANCE_FILE)
@@ -147,24 +153,60 @@ def verify_host_password(password_input):
         real_password = DEFAULT_HOST_PASSWORD
     return password_input == real_password
 
-# =========================================================
-# SESSION STATE
-# =========================================================
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
+
+if "uploaded_df" not in st.session_state:
+    st.session_state.uploaded_df = None
+
+# =========================================================
+# SIDEBAR HOST LOGIN + UPLOAD
+# =========================================================
+st.sidebar.header("Host Access")
+
+if not st.session_state.host_logged_in:
+    host_password_input = st.sidebar.text_input(
+        "Masukkan kata laluan host",
+        type="password"
+    )
+
+    if st.sidebar.button("Login Host"):
+        if verify_host_password(host_password_input):
+            st.session_state.host_logged_in = True
+            st.sidebar.success("Login host berjaya.")
+            st.rerun()
+        else:
+            st.sidebar.error("Kata laluan host salah.")
+else:
+    st.sidebar.success("Anda login sebagai host.")
+
+    uploaded_files = st.sidebar.file_uploader(
+        "Upload CSV Files",
+        accept_multiple_files=True,
+        type=["csv"]
+    )
+
+    if uploaded_files:
+        try:
+            st.session_state.uploaded_df = load_uploaded_files(uploaded_files)
+            st.sidebar.success(f"{len(uploaded_files)} fail berjaya dimuat naik.")
+        except Exception as e:
+            st.sidebar.error(f"Fail tidak dapat dibaca: {e}")
+
+    if st.sidebar.button("Logout Host"):
+        st.session_state.host_logged_in = False
+        st.session_state.uploaded_df = None
+        st.rerun()
 
 # =========================================================
 # LOAD DATA
 # =========================================================
+if st.session_state.uploaded_df is not None:
+    df = st.session_state.uploaded_df
+else:
+    df = load_default_data()
 
-uploaded_files = st.sidebar.file_uploader("Upload CSV Files", accept_multiple_files=True, type=["csv"])
-df = load_data()
 attendance_df = load_attendance()
-
-required_cols = [
-    "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
-    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
-]
 
 missing_cols = [col for col in required_cols if col not in df.columns]
 if missing_cols:
@@ -172,33 +214,25 @@ if missing_cols:
     st.stop()
 
 # =========================================================
-# TOP LOGOS - MOBILE FRIENDLY
+# LOGO UGAT SAHAJA
 # =========================================================
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    show_image_if_exists(LOGO_KPA, use_container_width=True)
-
-with c2:
-    show_image_if_exists(LOGO_ATM, use_container_width=True)
-
-with c3:
-    show_image_if_exists(LOGO_UGAT, use_container_width=True)
-
-# =========================================================
-# TITLE + TIME
-# =========================================================
-st.markdown("<h2 class='center-title'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h2>", unsafe_allow_html=True)
-st.markdown("<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>", unsafe_allow_html=True)
+show_image_if_exists(LOGO_UGAT, width=180)
 
 st.markdown(
-    f"<div class='time-box'>Masa Terkini Kuala Lumpur, Malaysia: {get_kl_time()}</div>",
+    "<h2 class='center-title'>🪖 Sistem Kehadiran Majlis Makan Malam Regimental KPA (UGAT)</h2>",
     unsafe_allow_html=True
 )
 
-# =========================================================
-# CENTER IMAGE
-# =========================================================
+st.markdown(
+    "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    f"<div class='time-box'>Last File Updated: {get_file_updated_time()}</div>",
+    unsafe_allow_html=True
+)
+
 show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
 st.markdown("---")
@@ -265,27 +299,9 @@ else:
 st.markdown("---")
 
 # =========================================================
-# HOST ONLY SECTION
+# LIVE ATTENDANCE - HOST ONLY
 # =========================================================
-st.subheader("Host Access")
-
-if not st.session_state.host_logged_in:
-    host_password_input = st.text_input("Masukkan kata laluan host untuk lihat live attendance", type="password")
-
-    if st.button("Login Host"):
-        if verify_host_password(host_password_input):
-            st.session_state.host_logged_in = True
-            st.success("Login host berjaya.")
-            st.rerun()
-        else:
-            st.error("Kata laluan host salah.")
-else:
-    st.success("Anda login sebagai host.")
-
-    if st.button("Logout Host"):
-        st.session_state.host_logged_in = False
-        st.rerun()
-
+if st.session_state.host_logged_in:
     st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
     if attendance_df.empty:
