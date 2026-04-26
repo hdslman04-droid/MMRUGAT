@@ -6,10 +6,13 @@ from zoneinfo import ZoneInfo
 import base64
 
 st.set_page_config(
-    page_title="Sistem Kehadiran MMR KPA (UGAT)",
+    page_title="MMR KPA (GAJI)",
     page_icon="TDM.png",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="expanded"
 )
+
+st.sidebar.title("Host Panel")
 
 # =========================================================
 # HIDE STREAMLIT DEFAULT UI
