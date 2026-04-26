@@ -245,8 +245,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-show_image_if_exists(CENTER_IMAGE, use_container_width=True)
-
 st.markdown("---")
 
 # =========================================================
@@ -267,17 +265,22 @@ if search_no:
             no_ten = str(row["NO TEN"]).strip()
             nama = row["NAMA PENUH"]
 
-            st.markdown("---")
-            st.markdown(f"### {nama}")
+           left_col, right_col = st.columns([1, 1.4])
 
-            st.write(f"**No Tentera:** {row['NO TEN']}")
-            st.write(f"**Pangkat:** {row['PKT']}")
-            st.write(f"**Pasukan:** {row['PASUKAN']}")
-            st.write(f"**Jawatan:** {row['JAWATAN']}")
-            st.write(f"**Menu:** {row['MENU']}")
-            st.write(f"**Pasangan:** {row['PASANGAN']}")
-            st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-            st.write(f"**Catatan:** {row['CATATAN']}")
+with left_col:
+    st.markdown(f"### {nama}")
+
+    st.write(f"**No Tentera:** {row['NO TEN']}")
+    st.write(f"**Pangkat:** {row['PKT']}")
+    st.write(f"**Pasukan:** {row['PASUKAN']}")
+    st.write(f"**Jawatan:** {row['JAWATAN']}")
+    st.write(f"**Menu:** {row['MENU']}")
+    st.write(f"**Pasangan:** {row['PASANGAN']}")
+    st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
+    st.write(f"**Catatan:** {row['CATATAN']}")
+
+with right_col:
+    show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
             sudah_hadir = False
             if not attendance_df.empty and "NO TEN" in attendance_df.columns:
