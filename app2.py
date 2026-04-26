@@ -22,33 +22,10 @@ if "uploaded_df" not in st.session_state:
     st.session_state.uploaded_df = None
 
 # =========================================================
-# HIDE STREAMLIT DEFAULT UI
+# CUSTOM CSS
 # =========================================================
 st.markdown("""
 <style>
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-
-[data-testid="stToolbar"] {
-    display: none;
-}
-
-[data-testid="stDecoration"] {
-    display: none;
-}
-
-[data-testid="stStatusWidget"] {
-    display: none;
-}
-
-.viewerBadge_container__1QSob {
-    display: none;
-}
-
-.stDeployButton {
-    display: none;
-}
-
 .block-container {
     padding-top: 1rem;
     padding-bottom: 2rem;
