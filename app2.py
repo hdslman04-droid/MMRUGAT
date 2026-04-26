@@ -9,7 +9,7 @@ st.set_page_config(
     page_title="MMR KPA (GAJI)",
     page_icon="TDM.png",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # =========================================================
@@ -22,20 +22,8 @@ if "uploaded_df" not in st.session_state:
     st.session_state.uploaded_df = None
 
 # =========================================================
-# HIDE STREAMLIT DEFAULT UI + AUTO HIDE SIDEBAR FOR GUEST
+# HIDE STREAMLIT DEFAULT UI
 # =========================================================
-if not st.session_state.host_logged_in:
-    st.markdown("""
-    <style>
-    section[data-testid="stSidebar"] {
-        display: none;
-    }
-    button[kind="header"] {
-        display: none;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
@@ -109,6 +97,9 @@ required_cols = [
     "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
 ]
 
+# =========================================================
+# FUNCTIONS
+# =========================================================
 def get_file_updated_time():
     files_to_check = [DATA_FILE, ATTENDANCE_FILE]
     existing_files = [Path(f) for f in files_to_check if Path(f).exists()]
@@ -123,6 +114,7 @@ def get_file_updated_time():
     )
 
     return latest_time.strftime("%d/%m/%Y %I:%M:%S %p")
+
 
 @st.cache_data
 def load_default_data():
@@ -146,6 +138,7 @@ def load_default_data():
 
     return df
 
+
 def load_uploaded_files(uploaded_files):
     all_data = []
 
@@ -166,6 +159,7 @@ def load_uploaded_files(uploaded_files):
 
     return pd.concat(all_data, ignore_index=True)
 
+
 def load_attendance():
     file_path = Path(ATTENDANCE_FILE)
 
@@ -173,8 +167,10 @@ def load_attendance():
         try:
             attendance_df = pd.read_csv(file_path)
             attendance_df.columns = [str(col).strip() for col in attendance_df.columns]
+
             for col in attendance_df.columns:
                 attendance_df[col] = attendance_df[col].astype(str).str.strip()
+
             return attendance_df
         except Exception:
             pass
@@ -185,49 +181,37 @@ def load_attendance():
         "STATUS_KEHADIRAN", "TARIKH_MASA"
     ])
 
+
 def save_attendance(attendance_df):
     attendance_df.to_csv(ATTENDANCE_FILE, index=False)
 
+
 def show_image_if_exists(image_path, width=None, use_container_width=False):
     path = Path(image_path)
+
     if path.exists():
         st.image(str(path), width=width, use_container_width=use_container_width)
+
 
 def verify_host_password(password_input):
     try:
         real_password = st.secrets["HOST_PASSWORD"]
     except Exception:
         real_password = DEFAULT_HOST_PASSWORD
+
     return password_input == real_password
+
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-# =========================================================
-# HOST LOGIN FOR GUEST - MAIN PAGE
-# =========================================================
-if not st.session_state.host_logged_in:
-    with st.expander("Host Login"):
-        host_password_input = st.text_input(
-            "Masukkan kata laluan host",
-            type="password"
-        )
-
-        if st.button("Login Host"):
-            if verify_host_password(host_password_input):
-                st.session_state.host_logged_in = True
-                st.success("Login host berjaya.")
-                st.rerun()
-            else:
-                st.error("Kata laluan host salah.")
 
 # =========================================================
-# SIDEBAR HOST PANEL - ONLY AFTER LOGIN
+# SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
 if st.session_state.host_logged_in:
     st.sidebar.title("Host Panel")
-    st.sidebar.header("Host Access")
     st.sidebar.success("Anda login sebagai host.")
 
     uploaded_files = st.sidebar.file_uploader(
@@ -248,6 +232,23 @@ if st.session_state.host_logged_in:
         st.session_state.uploaded_df = None
         st.rerun()
 
+else:
+    st.sidebar.title("Host Login")
+
+    host_password_input = st.sidebar.text_input(
+        "Masukkan kata laluan",
+        type="password"
+    )
+
+    if st.sidebar.button("Login"):
+        if verify_host_password(host_password_input):
+            st.session_state.host_logged_in = True
+            st.sidebar.success("Login berjaya.")
+            st.rerun()
+        else:
+            st.sidebar.error("Kata laluan salah.")
+
+
 # =========================================================
 # LOAD DATA
 # =========================================================
@@ -259,9 +260,11 @@ else:
 attendance_df = load_attendance()
 
 missing_cols = [col for col in required_cols if col not in df.columns]
+
 if missing_cols:
     st.error(f"Kolum berikut tiada dalam fail CSV: {missing_cols}")
     st.stop()
+
 
 # =========================================================
 # BANNER HEADER
@@ -269,9 +272,15 @@ if missing_cols:
 img_base64 = get_base64_image(LOGO_UGAT)
 
 st.markdown(f"""
-<div style="display:flex; align-items:center; gap:12px;
-background: linear-gradient(90deg, #020617, #111827);
-padding:15px; border-radius:15px; margin-bottom:15px;">
+<div style="
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: linear-gradient(90deg, #020617, #111827);
+    padding:15px;
+    border-radius:15px;
+    margin-bottom:15px;
+">
     <img src="data:image/png;base64,{img_base64}" width="50">
     <h2 style="margin:0; color:white;">
         Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
@@ -291,10 +300,12 @@ st.markdown(
 
 st.markdown("---")
 
+
 # =========================================================
 # SEARCH SECTION
 # =========================================================
 st.subheader("Carian Kehadiran")
+
 search_no = st.text_input("Masukkan No Tentera")
 
 if search_no:
@@ -328,6 +339,7 @@ if search_no:
                 show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
             sudah_hadir = False
+
             if not attendance_df.empty and "NO TEN" in attendance_df.columns:
                 sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
 
@@ -335,6 +347,7 @@ if search_no:
                 st.success("✅ Kehadiran telah ditandakan.")
             else:
                 if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
+
                     new_record = pd.DataFrame([{
                         "NO TEN": row["NO TEN"],
                         "NAMA PENUH": row["NAMA PENUH"],
@@ -346,17 +359,21 @@ if search_no:
                         "MENU PASANGAN": row["MENU PASANGAN"],
                         "CATATAN": row["CATATAN"],
                         "STATUS_KEHADIRAN": "HADIR",
-                        "TARIKH_MASA": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%Y-%m-%d %H:%M:%S")
+                        "TARIKH_MASA": datetime.now(
+                            ZoneInfo("Asia/Kuala_Lumpur")
+                        ).strftime("%Y-%m-%d %H:%M:%S")
                     }])
 
                     attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
                     save_attendance(attendance_df)
+
                     st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
                     st.rerun()
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
 
 st.markdown("---")
+
 
 # =========================================================
 # LIVE ATTENDANCE - HOST ONLY
@@ -373,6 +390,7 @@ if st.session_state.host_logged_in:
         st.info(f"Jumlah Kehadiran Semasa: {total_hadir}")
 
         csv_data = attendance_df.to_csv(index=False).encode("utf-8")
+
         st.download_button(
             label="Muat Turun Rekod Kehadiran",
             data=csv_data,
