@@ -9,24 +9,40 @@ st.set_page_config(
     page_title="MMR KPA (GAJI)",
     page_icon="TDM.png",
     layout="centered",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-st.sidebar.title("Host Panel")
+# =========================================================
+# SESSION STATE
+# =========================================================
+if "host_logged_in" not in st.session_state:
+    st.session_state.host_logged_in = False
+
+if "uploaded_df" not in st.session_state:
+    st.session_state.uploaded_df = None
 
 # =========================================================
-# HIDE STREAMLIT DEFAULT UI
+# HIDE STREAMLIT DEFAULT UI + AUTO HIDE SIDEBAR FOR GUEST
 # =========================================================
+if not st.session_state.host_logged_in:
+    st.markdown("""
+    <style>
+    section[data-testid="stSidebar"] {
+        display: none;
+    }
+    button[kind="header"] {
+        display: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
 
 [data-testid="stToolbar"] {
-    visibility: hidden;
-    height: 0%;
-    position: fixed;
+    display: none;
 }
 
 [data-testid="stDecoration"] {
@@ -44,11 +60,7 @@ header {visibility: hidden;}
 .stDeployButton {
     display: none;
 }
-</style>
-""", unsafe_allow_html=True)
 
-st.markdown("""
-<style>
 .block-container {
     padding-top: 1rem;
     padding-bottom: 2rem;
@@ -56,6 +68,7 @@ st.markdown("""
     padding-right: 1rem;
     max-width: 900px;
 }
+
 .time-box {
     text-align: center;
     font-size: 16px;
@@ -66,11 +79,13 @@ st.markdown("""
     margin-bottom: 18px;
     color: black;
 }
+
 .center-caption {
     text-align: center;
     margin-bottom: 20px;
     color: #555;
 }
+
 @media (max-width: 640px) {
     .block-container {
         padding-top: 0.5rem;
@@ -189,31 +204,30 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-if "host_logged_in" not in st.session_state:
-    st.session_state.host_logged_in = False
-
-if "uploaded_df" not in st.session_state:
-    st.session_state.uploaded_df = None
-
 # =========================================================
-# SIDEBAR HOST LOGIN + UPLOAD
+# HOST LOGIN FOR GUEST - MAIN PAGE
 # =========================================================
-st.sidebar.header("Host Access")
-
 if not st.session_state.host_logged_in:
-    host_password_input = st.sidebar.text_input(
-        "Masukkan kata laluan host",
-        type="password"
-    )
+    with st.expander("Host Login"):
+        host_password_input = st.text_input(
+            "Masukkan kata laluan host",
+            type="password"
+        )
 
-    if st.sidebar.button("Login Host"):
-        if verify_host_password(host_password_input):
-            st.session_state.host_logged_in = True
-            st.sidebar.success("Login host berjaya.")
-            st.rerun()
-        else:
-            st.sidebar.error("Kata laluan host salah.")
-else:
+        if st.button("Login Host"):
+            if verify_host_password(host_password_input):
+                st.session_state.host_logged_in = True
+                st.success("Login host berjaya.")
+                st.rerun()
+            else:
+                st.error("Kata laluan host salah.")
+
+# =========================================================
+# SIDEBAR HOST PANEL - ONLY AFTER LOGIN
+# =========================================================
+if st.session_state.host_logged_in:
+    st.sidebar.title("Host Panel")
+    st.sidebar.header("Host Access")
     st.sidebar.success("Anda login sebagai host.")
 
     uploaded_files = st.sidebar.file_uploader(
