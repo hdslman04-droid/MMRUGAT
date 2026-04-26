@@ -67,7 +67,7 @@ def get_file_updated_time():
     existing_files = [Path(f) for f in files_to_check if Path(f).exists()]
 
     if not existing_files:
-        return "Tiada fail dijumpai"
+        return "Tiada rekod"
 
     latest_file = max(existing_files, key=lambda x: x.stat().st_mtime)
     latest_time = datetime.fromtimestamp(
@@ -75,7 +75,7 @@ def get_file_updated_time():
         ZoneInfo("Asia/Kuala_Lumpur")
     )
 
-    return f"{latest_file.name} dikemaskini pada {latest_time.strftime('%d/%m/%Y %I:%M:%S %p')}"
+    return latest_time.strftime("%d/%m/%Y %I:%M:%S %p")
 
 @st.cache_data
 def load_default_data():
@@ -241,7 +241,7 @@ st.markdown(
 )
 
 st.markdown(
-    f"<div class='time-box'>Last File Updated: {get_file_updated_time()}</div>",
+    f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
     unsafe_allow_html=True
 )
 
