@@ -217,16 +217,23 @@ if missing_cols:
 # LOGO UGAT SAHAJA
 # =========================================================
 
-col1, col2 = st.columns([1, 6])
+from PIL import Image
+import base64
 
-with col1:
-    show_image_if_exists("Logo-UGAT.png", width=50)
+def get_base64_image(image_path):
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
-with col2:
-    st.markdown(
-        "<h2 style='margin-top:15px;'>Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)</h2>",
-        unsafe_allow_html=True
-    )
+img_base64 = get_base64_image("Logo-UGAT.png")
+
+st.markdown(f"""
+<div style="display:flex; align-items:center; gap:15px;">
+    <img src="data:image/png;base64,{img_base64}" width="60">
+    <h2 style="margin:0;">
+        Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
+    </h2>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown(
     "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>",
