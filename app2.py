@@ -216,12 +216,11 @@ if missing_cols:
 # =========================================================
 # LOGO UGAT SAHAJA
 # =========================================================
-show_image_if_exists(LOGO_UGAT, width=180)
 
 col1, col2 = st.columns([1, 6])
 
 with col1:
-    show_image_if_exists("Logo-UGAT.png", width=60)
+    show_image_if_exists("Logo-UGAT.png", width=80)
 
 with col2:
     st.markdown(
