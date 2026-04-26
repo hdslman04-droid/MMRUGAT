@@ -3,8 +3,6 @@ import streamlit as st
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from PIL import Image
-import base64
 
 st.set_page_config(
     page_title="Sistem Kehadiran MMR KPA (UGAT)",
@@ -21,7 +19,6 @@ st.markdown("""
     padding-right: 1rem;
     max-width: 900px;
 }
-
 .time-box {
     text-align: center;
     font-size: 16px;
@@ -32,39 +29,16 @@ st.markdown("""
     margin-bottom: 18px;
     color: black;
 }
-
+.center-title {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
 .center-caption {
     text-align: center;
     margin-bottom: 20px;
     color: #555;
 }
-
-/* Hide top-right Streamlit Cloud toolbar: Fork / GitHub / menu */
-[data-testid="stToolbar"] {
-    display: none !important;
-}
-
-[data-testid="stDecoration"] {
-    display: none !important;
-}
-
-#MainMenu {
-    visibility: hidden;
-}
-
-/* Hide bottom-right floating Streamlit button */
-div[data-testid="stFloatingButton"] {
-    display: none !important;
-}
-
-[data-testid="stStatusWidget"] {
-    display: none !important;
-}
-
-footer {
-    visibility: hidden;
-}
-
 @media (max-width: 640px) {
     .block-container {
         padding-top: 0.5rem;
@@ -179,16 +153,15 @@ def verify_host_password(password_input):
         real_password = DEFAULT_HOST_PASSWORD
     return password_input == real_password
 
-def get_base64_image(image_path):
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
-
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
 
 if "uploaded_df" not in st.session_state:
     st.session_state.uploaded_df = None
 
+# =========================================================
+# SIDEBAR HOST LOGIN + UPLOAD
+# =========================================================
 st.sidebar.header("Host Access")
 
 if not st.session_state.host_logged_in:
@@ -225,6 +198,9 @@ else:
         st.session_state.uploaded_df = None
         st.rerun()
 
+# =========================================================
+# LOAD DATA
+# =========================================================
 if st.session_state.uploaded_df is not None:
     df = st.session_state.uploaded_df
 else:
@@ -237,12 +213,23 @@ if missing_cols:
     st.error(f"Kolum berikut tiada dalam fail CSV: {missing_cols}")
     st.stop()
 
-img_base64 = get_base64_image(LOGO_UGAT)
+# =========================================================
+# LOGO UGAT SAHAJA
+# =========================================================
+
+from PIL import Image
+import base64
+
+def get_base64_image(image_path):
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+img_base64 = get_base64_image("Logo-UGAT.png")
 
 st.markdown(f"""
 <div style="display:flex; align-items:center; gap:12px;">
     <img src="data:image/png;base64,{img_base64}" width="50">
-    <h2 style="margin:0; font-size:30px; line-height:1.2;">
+    <h2 style="margin:0; font-size:30px; line-height:3.0;">
         Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
     </h2>
 </div>
@@ -260,6 +247,9 @@ st.markdown(
 
 st.markdown("---")
 
+# =========================================================
+# SEARCH SECTION
+# =========================================================
 st.subheader("Carian Kehadiran")
 search_no = st.text_input("Masukkan No Tentera")
 
@@ -272,6 +262,7 @@ if search_no:
         st.success(f"{len(result_df)} rekod dijumpai.")
 
         for idx, row in result_df.iterrows():
+
             no_ten = str(row["NO TEN"]).strip()
             nama = row["NAMA PENUH"]
 
@@ -324,6 +315,9 @@ else:
 
 st.markdown("---")
 
+# =========================================================
+# LIVE ATTENDANCE - HOST ONLY
+# =========================================================
 if st.session_state.host_logged_in:
     st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
