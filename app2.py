@@ -39,7 +39,7 @@ st.markdown("""
     color: #555;
 }
 
-/* Hide Streamlit toolbar/menu */
+/* Hide top-right Streamlit Cloud toolbar: Fork / GitHub / menu */
 [data-testid="stToolbar"] {
     display: none !important;
 }
@@ -48,30 +48,21 @@ st.markdown("""
     display: none !important;
 }
 
-[data-testid="stStatusWidget"] {
-    display: none !important;
-}
-
 #MainMenu {
     visibility: hidden;
 }
 
-footer {
-    visibility: hidden;
-}
-
-header {
-    visibility: hidden;
-}
-
-/* Hide sidebar collapsed arrow */
-[data-testid="collapsedControl"] {
-    display: none !important;
-}
-
-/* Try hide floating button */
+/* Hide bottom-right floating Streamlit button */
 div[data-testid="stFloatingButton"] {
     display: none !important;
+}
+
+[data-testid="stStatusWidget"] {
+    display: none !important;
+}
+
+footer {
+    visibility: hidden;
 }
 
 @media (max-width: 640px) {
@@ -198,9 +189,6 @@ if "host_logged_in" not in st.session_state:
 if "uploaded_df" not in st.session_state:
     st.session_state.uploaded_df = None
 
-# =========================================================
-# SIDEBAR HOST LOGIN + UPLOAD
-# =========================================================
 st.sidebar.header("Host Access")
 
 if not st.session_state.host_logged_in:
@@ -237,9 +225,6 @@ else:
         st.session_state.uploaded_df = None
         st.rerun()
 
-# =========================================================
-# LOAD DATA
-# =========================================================
 if st.session_state.uploaded_df is not None:
     df = st.session_state.uploaded_df
 else:
@@ -252,9 +237,6 @@ if missing_cols:
     st.error(f"Kolum berikut tiada dalam fail CSV: {missing_cols}")
     st.stop()
 
-# =========================================================
-# HEADER
-# =========================================================
 img_base64 = get_base64_image(LOGO_UGAT)
 
 st.markdown(f"""
@@ -278,9 +260,6 @@ st.markdown(
 
 st.markdown("---")
 
-# =========================================================
-# SEARCH SECTION
-# =========================================================
 st.subheader("Carian Kehadiran")
 search_no = st.text_input("Masukkan No Tentera")
 
@@ -345,9 +324,6 @@ else:
 
 st.markdown("---")
 
-# =========================================================
-# LIVE ATTENDANCE - HOST ONLY
-# =========================================================
 if st.session_state.host_logged_in:
     st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
