@@ -214,22 +214,6 @@ if missing_cols:
     st.stop()
 
 # =========================================================
-# HEADER (BANNER)
-# =========================================================
-img_base64 = get_base64_image("TDM.png")
-
-st.markdown(f"""
-<div style="display:flex; align-items:center; gap:12px; 
-background: linear-gradient(90deg, #020617, #111827);
-padding:15px; border-radius:15px; margin-bottom:15px;">
-    <img src="data:image/png;base64,{img_base64}" width="50">
-    <h2 style="margin:0; color:white;">
-    Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
-    </h2>
-</div>
-""", unsafe_allow_html=True)
-
-# =========================================================
 # LOGO UGAT SAHAJA
 # =========================================================
 
