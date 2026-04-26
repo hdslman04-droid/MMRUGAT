@@ -261,26 +261,28 @@ if search_no:
     else:
         st.success(f"{len(result_df)} rekod dijumpai.")
 
-        for idx, row in result_df.iterrows():
-            no_ten = str(row["NO TEN"]).strip()
-            nama = row["NAMA PENUH"]
+      for idx, row in result_df.iterrows():
 
-           left_col, right_col = st.columns([1, 1.4])
+    no_ten = str(row["NO TEN"]).strip()
+    nama = row["NAMA PENUH"]
 
-with left_col:
-    st.markdown(f"### {nama}")
+    st.markdown("---")
 
-    st.write(f"**No Tentera:** {row['NO TEN']}")
-    st.write(f"**Pangkat:** {row['PKT']}")
-    st.write(f"**Pasukan:** {row['PASUKAN']}")
-    st.write(f"**Jawatan:** {row['JAWATAN']}")
-    st.write(f"**Menu:** {row['MENU']}")
-    st.write(f"**Pasangan:** {row['PASANGAN']}")
-    st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-    st.write(f"**Catatan:** {row['CATATAN']}")
+    left_col, right_col = st.columns([1, 1.4])
 
-with right_col:
-    show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+    with left_col:
+        st.markdown(f"### {nama}")
+        st.write(f"**No Tentera:** {row['NO TEN']}")
+        st.write(f"**Pangkat:** {row['PKT']}")
+        st.write(f"**Pasukan:** {row['PASUKAN']}")
+        st.write(f"**Jawatan:** {row['JAWATAN']}")
+        st.write(f"**Menu:** {row['MENU']}")
+        st.write(f"**Pasangan:** {row['PASANGAN']}")
+        st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
+        st.write(f"**Catatan:** {row['CATATAN']}")
+
+    with right_col:
+        show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
             sudah_hadir = False
             if not attendance_df.empty and "NO TEN" in attendance_df.columns:
