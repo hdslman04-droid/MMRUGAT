@@ -254,14 +254,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown(
-    "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat dan tandakan kehadiran.</div>",
-    unsafe_allow_html=True
-)
-
-st.markdown("---")
-
-
 # =========================================================
 # SEARCH SECTION
 # =========================================================
