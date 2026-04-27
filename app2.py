@@ -12,18 +12,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# =========================================================
-# SESSION STATE
-# =========================================================
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
 
 if "uploaded_df" not in st.session_state:
     st.session_state.uploaded_df = None
 
-# =========================================================
-# CUSTOM CSS
-# =========================================================
 st.markdown("""
 <style>
 .block-container {
@@ -51,6 +45,10 @@ st.markdown("""
     color: #555;
 }
 
+div[data-testid="stTextInput"] {
+    max-width: 420px;
+}
+
 @media (max-width: 640px) {
     .block-container {
         padding-top: 0.5rem;
@@ -61,22 +59,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-DATA_FILE = "SEATING_PLAN.csv"
+DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_UGAT = "Logo-UGAT.png"
-CENTER_IMAGE = "FRONT PAAGE.png"
+CENTER_IMAGE = "LAYOUT SUSUNAN.png"
 
 DEFAULT_HOST_PASSWORD = "host123"
 
 required_cols = [
     "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
-    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN"
+    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN", "MEJA"
 ]
 
-# =========================================================
-# FUNCTIONS
-# =========================================================
 def get_file_updated_time():
     files_to_check = [DATA_FILE, ATTENDANCE_FILE]
     existing_files = [Path(f) for f in files_to_check if Path(f).exists()]
@@ -281,9 +276,16 @@ st.markdown("---")
 # =========================================================
 # SEARCH SECTION
 # =========================================================
-st.subheader("Carian Kehadiran")
+st.markdown(
+    "<h3 style='color:#38bdf8;'>Carian Nombor Tentera</h3>",
+    unsafe_allow_html=True
+)
 
-search_no = st.text_input("Masukkan No Tentera")
+search_no = st.text_input(
+    "Masukkan No Tentera",
+    max_chars=10,
+    placeholder="Contoh: 3011701"
+)
 
 if search_no:
     result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
@@ -299,21 +301,19 @@ if search_no:
 
             st.markdown("---")
 
-            left_col, right_col = st.columns([1, 1.4])
+            st.markdown(f"### {nama}")
+            st.write(f"**No Tentera:** {row['NO TEN']}")
+            st.write(f"**Pangkat:** {row['PKT']}")
+            st.write(f"**Pasukan:** {row['PASUKAN']}")
+            st.write(f"**Jawatan:** {row['JAWATAN']}")
+            st.write(f"**Meja:** {row['MEJA']}")
+            st.write(f"**Menu:** {row['MENU']}")
+            st.write(f"**Pasangan:** {row['PASANGAN']}")
+            st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
+            st.write(f"**Catatan:** {row['CATATAN']}")
 
-            with left_col:
-                st.markdown(f"### {nama}")
-                st.write(f"**No Tentera:** {row['NO TEN']}")
-                st.write(f"**Pangkat:** {row['PKT']}")
-                st.write(f"**Pasukan:** {row['PASUKAN']}")
-                st.write(f"**Jawatan:** {row['JAWATAN']}")
-                st.write(f"**Menu:** {row['MENU']}")
-                st.write(f"**Pasangan:** {row['PASANGAN']}")
-                st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-                st.write(f"**Catatan:** {row['CATATAN']}")
-
-            with right_col:
-                show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+            st.markdown("### Pelan Kedudukan Dewan")
+            show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
             sudah_hadir = False
 
@@ -321,31 +321,36 @@ if search_no:
                 sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
 
             if sudah_hadir:
-                st.success("✅ Kehadiran telah ditandakan.")
+                st.success("✅ TELAH HADIR")
             else:
-                if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
+                st.warning("❌ BELUM HADIR")
 
-                    new_record = pd.DataFrame([{
-                        "NO TEN": row["NO TEN"],
-                        "NAMA PENUH": row["NAMA PENUH"],
-                        "PKT": row["PKT"],
-                        "PASUKAN": row["PASUKAN"],
-                        "JAWATAN": row["JAWATAN"],
-                        "MENU": row["MENU"],
-                        "PASANGAN": row["PASANGAN"],
-                        "MENU PASANGAN": row["MENU PASANGAN"],
-                        "CATATAN": row["CATATAN"],
-                        "STATUS_KEHADIRAN": "HADIR",
-                        "TARIKH_MASA": datetime.now(
-                            ZoneInfo("Asia/Kuala_Lumpur")
-                        ).strftime("%Y-%m-%d %H:%M:%S")
-                    }])
+                if st.session_state.host_logged_in:
+                    if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
 
-                    attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
-                    save_attendance(attendance_df)
+                        new_record = pd.DataFrame([{
+                            "NO TEN": row["NO TEN"],
+                            "NAMA PENUH": row["NAMA PENUH"],
+                            "PKT": row["PKT"],
+                            "PASUKAN": row["PASUKAN"],
+                            "JAWATAN": row["JAWATAN"],
+                            "MENU": row["MENU"],
+                            "PASANGAN": row["PASANGAN"],
+                            "MENU PASANGAN": row["MENU PASANGAN"],
+                            "CATATAN": row["CATATAN"],
+                            "STATUS_KEHADIRAN": "HADIR",
+                            "TARIKH_MASA": datetime.now(
+                                ZoneInfo("Asia/Kuala_Lumpur")
+                            ).strftime("%Y-%m-%d %H:%M:%S")
+                        }])
 
-                    st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
-                    st.rerun()
+                        attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
+                        save_attendance(attendance_df)
+
+                        st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
+                        st.rerun()
+                else:
+                    st.info("Hanya host boleh tandakan kehadiran.")
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
 
