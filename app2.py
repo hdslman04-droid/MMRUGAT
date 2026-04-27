@@ -35,6 +35,7 @@ st.markdown("""
     padding: 10px;
     border-radius: 10px;
     background-color: #f3f4f6;
+    margin-top: 14px;
     margin-bottom: 18px;
     color: black;
 }
@@ -68,6 +69,7 @@ CENTER_IMAGE = "LAYOUT SUSUNAN.png"
 DEFAULT_HOST_PASSWORD = "host123"
 
 required_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
+
 
 def get_file_updated_time():
     files_to_check = [DATA_FILE, ATTENDANCE_FILE]
@@ -257,11 +259,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown(
-    f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
-    unsafe_allow_html=True
-)
-
 st.markdown("---")
 
 
@@ -292,70 +289,78 @@ if search_no:
 
         st.markdown("### Maklumat Kehadiran")
 
-        for idx, row in group_df.iterrows():
-            noten = str(row["NOTEN"]).strip()
-            nama = row["NAMA"]
+        display_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
 
-            st.markdown("---")
-            st.write(f"**BIL:** {row['BIL']}")
-            st.write(f"**No Tentera:** {row['NOTEN']}")
-            st.write(f"**Nama:** {row['NAMA']}")
-            st.write(f"**Menu:** {row['MENU']}")
-            st.write(f"**Meja:** {row['MEJA']}")
+        if "CATATAN" in group_df.columns:
+            display_cols.append("CATATAN")
 
-            if "CATATAN" in row.index:
-                st.write(f"**Catatan:** {row['CATATAN']}")
-
-            sudah_hadir = False
-
-            if not attendance_df.empty and "NOTEN" in attendance_df.columns:
-                sudah_hadir = noten in attendance_df["NOTEN"].astype(str).values
-
-            if sudah_hadir:
-                st.success("✅ TELAH HADIR")
-            else:
-                st.warning("❌ BELUM HADIR")
+        st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
         show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
+        st.markdown(
+            f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
+            unsafe_allow_html=True
+        )
+
+        sudah_hadir_semua = True
+
+        for idx, row in group_df.iterrows():
+            noten = str(row["NOTEN"]).strip()
+
+            sudah_hadir = False
+
+            if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+                sudah_hadir = noten in attendance_df["NOTEN"].astype(str).str.strip().values
+
+            if not sudah_hadir:
+                sudah_hadir_semua = False
+
+        if sudah_hadir_semua:
+            st.success("✅ TELAH HADIR")
+        else:
+            st.warning("❌ BELUM HADIR")
+
         if st.session_state.host_logged_in:
-            if st.button("Submit / Tandakan Kehadiran Kumpulan Ini"):
+            if not sudah_hadir_semua:
+                if st.button("Submit / Tandakan Kehadiran Kumpulan Ini"):
 
-                new_records = []
+                    new_records = []
 
-                for idx, row in group_df.iterrows():
-                    noten = str(row["NOTEN"]).strip()
+                    for idx, row in group_df.iterrows():
+                        noten = str(row["NOTEN"]).strip()
 
-                    already_exists = False
-                    if not attendance_df.empty and "NOTEN" in attendance_df.columns:
-                        already_exists = noten in attendance_df["NOTEN"].astype(str).values
+                        already_exists = False
+                        if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+                            already_exists = noten in attendance_df["NOTEN"].astype(str).str.strip().values
 
-                    if not already_exists:
-                        new_records.append({
-                            "BIL": row["BIL"],
-                            "NOTEN": row["NOTEN"],
-                            "NAMA": row["NAMA"],
-                            "MENU": row["MENU"],
-                            "MEJA": row["MEJA"],
-                            "STATUS_KEHADIRAN": "HADIR",
-                            "TARIKH_MASA": datetime.now(
-                                ZoneInfo("Asia/Kuala_Lumpur")
-                            ).strftime("%Y-%m-%d %H:%M:%S")
-                        })
+                        if not already_exists:
+                            new_records.append({
+                                "BIL": row["BIL"],
+                                "NOTEN": row["NOTEN"],
+                                "NAMA": row["NAMA"],
+                                "MENU": row["MENU"],
+                                "MEJA": row["MEJA"],
+                                "STATUS_KEHADIRAN": "HADIR",
+                                "TARIKH_MASA": datetime.now(
+                                    ZoneInfo("Asia/Kuala_Lumpur")
+                                ).strftime("%Y-%m-%d %H:%M:%S")
+                            })
 
-                if new_records:
-                    attendance_df = pd.concat(
-                        [attendance_df, pd.DataFrame(new_records)],
-                        ignore_index=True
-                    )
-                    save_attendance(attendance_df)
-                    st.success("Kehadiran berjaya direkodkan.")
-                    st.rerun()
-                else:
-                    st.info("Semua dalam BIL ini telah ditandakan hadir.")
+                    if new_records:
+                        attendance_df = pd.concat(
+                            [attendance_df, pd.DataFrame(new_records)],
+                            ignore_index=True
+                        )
+                        save_attendance(attendance_df)
+                        st.success("Kehadiran berjaya direkodkan.")
+                        st.rerun()
+                    else:
+                        st.info("Semua dalam BIL ini telah ditandakan hadir.")
         else:
             st.info("Hanya host boleh tandakan kehadiran.")
+
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
 
@@ -368,19 +373,45 @@ st.markdown("---")
 if st.session_state.host_logged_in:
     st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
 
+    hadir_noten = []
+
+    if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+        hadir_noten = attendance_df["NOTEN"].astype(str).str.strip().tolist()
+
+    belum_hadir_df = df[~df["NOTEN"].astype(str).str.strip().isin(hadir_noten)].copy()
+
+    total_semua = len(df)
+    total_hadir = len(attendance_df)
+    total_belum_hadir = len(belum_hadir_df)
+
+    st.info(f"Jumlah Keseluruhan: {total_semua}")
+    st.success(f"Jumlah Telah Hadir: {total_hadir}")
+    st.warning(f"Jumlah Belum Hadir: {total_belum_hadir}")
+
+    st.markdown("### ✅ Telah Hadir")
+
     if attendance_df.empty:
         st.warning("Belum ada rekod kehadiran.")
     else:
         st.dataframe(attendance_df, use_container_width=True)
 
-        total_hadir = len(attendance_df)
-        st.info(f"Jumlah Kehadiran Semasa: {total_hadir}")
+    st.markdown("### ❌ Belum Hadir")
 
-        csv_data = attendance_df.to_csv(index=False).encode("utf-8")
+    if belum_hadir_df.empty:
+        st.success("Semua telah hadir.")
+    else:
+        belum_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
 
-        st.download_button(
-            label="Muat Turun Rekod Kehadiran",
-            data=csv_data,
-            file_name="attendance_records.csv",
-            mime="text/csv"
-        )
+        if "CATATAN" in belum_hadir_df.columns:
+            belum_cols.append("CATATAN")
+
+        st.dataframe(belum_hadir_df[belum_cols], use_container_width=True)
+
+    csv_data = attendance_df.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="Muat Turun Rekod Kehadiran",
+        data=csv_data,
+        file_name="attendance_records.csv",
+        mime="text/csv"
+    )
