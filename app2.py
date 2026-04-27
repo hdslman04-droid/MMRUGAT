@@ -5,6 +5,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
 from PIL import Image, ImageDraw
+from flask import Flask, request
+
+app = Flask(__name__)
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
