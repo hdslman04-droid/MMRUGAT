@@ -16,9 +16,6 @@ st.set_page_config(
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
 
-if "uploaded_df" not in st.session_state:
-    st.session_state.uploaded_df = None
-
 st.markdown("""
 <style>
 .block-container {
@@ -61,6 +58,7 @@ div[data-testid="stTextInput"] {
 </style>
 """, unsafe_allow_html=True)
 
+
 DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
@@ -70,6 +68,18 @@ CENTER_IMAGE = "LAYOUT SUSUNAN.png"
 DEFAULT_HOST_PASSWORD = "host123"
 
 required_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
+
+
+# =========================================================
+# BASIC FUNCTIONS
+# =========================================================
+def get_file_mtime(file_path):
+    path = Path(file_path)
+
+    if path.exists():
+        return path.stat().st_mtime
+
+    return 0
 
 
 def get_file_updated_time():
@@ -89,24 +99,77 @@ def get_file_updated_time():
 
 
 def clean_csv(df_raw):
-    if "BIL" not in df_raw.columns:
-        headers = df_raw.iloc[0].tolist()
-        df = df_raw.iloc[1:].copy()
-        df.columns = headers
-    else:
+    df_raw = df_raw.dropna(how="all").reset_index(drop=True)
+
+    # Bersihkan column sedia ada
+    df_raw.columns = [str(col).strip().upper() for col in df_raw.columns]
+
+    # Jika CSV memang sudah ada header yang betul
+    if all(col in df_raw.columns for col in required_cols):
         df = df_raw.copy()
 
+    else:
+        header_row_index = None
+
+        # Cari row sebenar yang mengandungi BIL, NOTEN, NAMA, MENU, MEJA
+        for i in range(len(df_raw)):
+            row_values = [
+                str(value).strip().upper()
+                for value in df_raw.iloc[i].tolist()
+            ]
+
+            if (
+                "BIL" in row_values
+                and "NOTEN" in row_values
+                and "NAMA" in row_values
+                and "MENU" in row_values
+                and "MEJA" in row_values
+            ):
+                header_row_index = i
+                break
+
+        if header_row_index is None:
+            st.error(
+                "Header CSV tidak dijumpai. Pastikan fail CSV ada kolum "
+                "BIL, NOTEN, NAMA, MENU dan MEJA."
+            )
+            st.stop()
+
+        headers = [
+            str(value).strip().upper()
+            for value in df_raw.iloc[header_row_index].tolist()
+        ]
+
+        df = df_raw.iloc[header_row_index + 1:].copy()
+        df.columns = headers
+
+    # Buang column kosong / unnamed
+    df = df.loc[:, df.columns.notna()]
+    df = df.loc[:, [str(col).strip() != "" for col in df.columns]]
+    df = df.loc[:, ~df.columns.astype(str).str.upper().str.startswith("UNNAMED")]
+
+    # Bersihkan data
     df = df.dropna(how="all").reset_index(drop=True)
-    df.columns = [str(col).strip() for col in df.columns]
+    df.columns = [str(col).strip().upper() for col in df.columns]
 
     for col in df.columns:
         df[col] = df[col].fillna("").astype(str).str.strip()
+
+    # Buang .0 jika Excel convert nombor kepada decimal
+    if "BIL" in df.columns:
+        df["BIL"] = df["BIL"].str.replace(".0", "", regex=False)
+
+    if "NOTEN" in df.columns:
+        df["NOTEN"] = df["NOTEN"].str.replace(".0", "", regex=False)
+
+    if "MEJA" in df.columns:
+        df["MEJA"] = df["MEJA"].str.upper().str.replace(".0", "", regex=False)
 
     return df
 
 
 @st.cache_data
-def load_default_data():
+def load_default_data(file_mtime):
     file_path = Path(DATA_FILE)
 
     if not file_path.exists():
@@ -125,6 +188,9 @@ def load_uploaded_files(uploaded_files):
         df = clean_csv(df_raw)
         all_data.append(df)
 
+    if not all_data:
+        return pd.DataFrame()
+
     return pd.concat(all_data, ignore_index=True)
 
 
@@ -134,10 +200,13 @@ def load_attendance():
     if file_path.exists():
         try:
             attendance_df = pd.read_csv(file_path)
-            attendance_df.columns = [str(col).strip() for col in attendance_df.columns]
+            attendance_df.columns = [str(col).strip().upper() for col in attendance_df.columns]
 
             for col in attendance_df.columns:
-                attendance_df[col] = attendance_df[col].astype(str).str.strip()
+                attendance_df[col] = attendance_df[col].fillna("").astype(str).str.strip()
+
+            if "NOTEN" in attendance_df.columns:
+                attendance_df["NOTEN"] = attendance_df["NOTEN"].str.replace(".0", "", regex=False)
 
             return attendance_df
         except Exception:
@@ -150,7 +219,16 @@ def load_attendance():
 
 
 def save_attendance(attendance_df):
-    attendance_df.to_csv(ATTENDANCE_FILE, index=False)
+    attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
+
+
+def reset_attendance():
+    reset_attendance_df = pd.DataFrame(columns=[
+        "BIL", "NOTEN", "NAMA", "MENU", "MEJA",
+        "STATUS_KEHADIRAN", "TARIKH_MASA"
+    ])
+
+    reset_attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
 
 
 def show_image_if_exists(image_path, width=None, use_container_width=False):
@@ -170,7 +248,12 @@ def verify_host_password(password_input):
 
 
 def get_base64_image(image_path):
-    with open(image_path, "rb") as f:
+    path = Path(image_path)
+
+    if not path.exists():
+        return ""
+
+    with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 
@@ -180,7 +263,6 @@ def get_base64_image(image_path):
 def generate_seat_map():
     seat_map = {}
 
-    # Koordinat row berdasarkan gambar layout
     row_y = {
         "FL": 28,
         "FR": 84,
@@ -196,7 +278,6 @@ def generate_seat_map():
         "AR": 532,
     }
 
-    # Seat horizontal dari kiri ke kanan: 20 hingga 1
     start_x = 70
     gap_x = 50
 
@@ -212,7 +293,6 @@ def generate_seat_map():
                 "h": 18
             }
 
-    # Meja nombor di sebelah kanan layout
     right_side_positions = {
         "18": (1155, 42),
         "16": (1155, 70),
@@ -312,14 +392,39 @@ if st.session_state.host_logged_in:
 
     if uploaded_files:
         try:
-            st.session_state.uploaded_df = load_uploaded_files(uploaded_files)
-            st.sidebar.success(f"{len(uploaded_files)} fail berjaya dimuat naik.")
+            new_df = load_uploaded_files(uploaded_files)
+
+            missing_uploaded_cols = [
+                col for col in required_cols
+                if col not in new_df.columns
+            ]
+
+            if missing_uploaded_cols:
+                st.sidebar.error(
+                    f"CSV baru tidak lengkap. Kolum tiada: {missing_uploaded_cols}"
+                )
+            else:
+                # Simpan CSV baru sebagai data utama untuk semua user
+                new_df.to_csv(DATA_FILE, index=False, encoding="utf-8")
+
+                # Reset kehadiran bila data baru upload
+                reset_attendance()
+
+                # Clear cache supaya data lama tidak digunakan
+                st.cache_data.clear()
+
+                st.sidebar.success(
+                    "CSV baru berjaya dimuat naik. "
+                    "Data tetamu telah dikemaskini dan rekod kehadiran telah direset."
+                )
+
+                st.rerun()
+
         except Exception as e:
             st.sidebar.error(f"Fail tidak dapat dibaca: {e}")
 
     if st.sidebar.button("Logout Host"):
         st.session_state.host_logged_in = False
-        st.session_state.uploaded_df = None
         st.rerun()
 
 else:
@@ -341,12 +446,9 @@ else:
 
 # =========================================================
 # LOAD DATA
+# Semua user akan baca DATA_FILE utama, bukan session host
 # =========================================================
-if st.session_state.uploaded_df is not None:
-    df = st.session_state.uploaded_df
-else:
-    df = load_default_data()
-
+df = load_default_data(get_file_mtime(DATA_FILE))
 attendance_df = load_attendance()
 
 missing_cols = [col for col in required_cols if col not in df.columns]
@@ -361,23 +463,39 @@ if missing_cols:
 # =========================================================
 img_base64 = get_base64_image(LOGO_UGAT)
 
-st.markdown(f"""
-<div style="
-    display:flex;
-    align-items:center;
-    gap:12px;
-    background: linear-gradient(90deg, #020617, #111827);
-    padding:15px;
-    border-radius:15px;
-    margin-bottom:15px;
-">
-    <img src="data:image/png;base64,{img_base64}" width="50">
-    <h2 style="margin:0; color:white;">
-        Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
-    </h2>
-</div>
-""", unsafe_allow_html=True)
-
+if img_base64:
+    st.markdown(f"""
+    <div style="
+        display:flex;
+        align-items:center;
+        gap:12px;
+        background: linear-gradient(90deg, #020617, #111827);
+        padding:15px;
+        border-radius:15px;
+        margin-bottom:15px;
+    ">
+        <img src="data:image/png;base64,{img_base64}" width="50">
+        <h2 style="margin:0; color:white;">
+            Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div style="
+        display:flex;
+        align-items:center;
+        gap:12px;
+        background: linear-gradient(90deg, #020617, #111827);
+        padding:15px;
+        border-radius:15px;
+        margin-bottom:15px;
+    ">
+        <h2 style="margin:0; color:white;">
+            Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # =========================================================
@@ -395,13 +513,17 @@ search_no = st.text_input(
 )
 
 if search_no:
-    result_df = df[df["NOTEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
+    search_value = search_no.strip()
+
+    result_df = df[
+        df["NOTEN"].astype(str).str.contains(search_value, case=False, na=False)
+    ].copy()
 
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
     else:
-        bil_value = result_df.iloc[0]["BIL"]
-        group_df = df[df["BIL"] == bil_value].copy()
+        bil_value = str(result_df.iloc[0]["BIL"]).strip()
+        group_df = df[df["BIL"].astype(str).str.strip() == bil_value].copy()
 
         st.success(f"Rekod dijumpai. BIL: {bil_value}")
 
@@ -450,6 +572,7 @@ if search_no:
                         noten = str(row["NOTEN"]).strip()
 
                         already_exists = False
+
                         if not attendance_df.empty and "NOTEN" in attendance_df.columns:
                             already_exists = noten in attendance_df["NOTEN"].astype(str).str.strip().values
 
@@ -496,7 +619,9 @@ if st.session_state.host_logged_in:
     if not attendance_df.empty and "NOTEN" in attendance_df.columns:
         hadir_noten = attendance_df["NOTEN"].astype(str).str.strip().tolist()
 
-    belum_hadir_df = df[~df["NOTEN"].astype(str).str.strip().isin(hadir_noten)].copy()
+    belum_hadir_df = df[
+        ~df["NOTEN"].astype(str).str.strip().isin(hadir_noten)
+    ].copy()
 
     total_semua = len(df)
     total_hadir = len(attendance_df)
