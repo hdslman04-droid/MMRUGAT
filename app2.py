@@ -249,7 +249,7 @@ st.markdown(f"""
 ">
     <img src="data:image/png;base64,{img_base64}" width="50">
     <h2 style="margin:0; color:white;">
-        Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
+        MAJLIS MAKAN MALAM REJIMENTAL PENGHARGAAN PENGERUSI KOR PERKHIDMATAN AM
     </h2>
 </div>
 """, unsafe_allow_html=True)
