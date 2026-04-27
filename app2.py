@@ -4,6 +4,7 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
+from PIL import Image, ImageDraw
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
@@ -174,6 +175,129 @@ def get_base64_image(image_path):
 
 
 # =========================================================
+# HIGHLIGHT MEJA DALAM LAYOUT
+# =========================================================
+def generate_seat_map():
+    seat_map = {}
+
+    # Koordinat row berdasarkan gambar layout
+    row_y = {
+        "FL": 28,
+        "FR": 84,
+        "EL": 112,
+        "ER": 168,
+        "DL": 196,
+        "DR": 252,
+        "CL": 308,
+        "CR": 364,
+        "BL": 392,
+        "BR": 448,
+        "AL": 476,
+        "AR": 532,
+    }
+
+    # Seat horizontal dari kiri ke kanan: 20 hingga 1
+    start_x = 70
+    gap_x = 50
+
+    for prefix, y in row_y.items():
+        for seat_no in range(20, 0, -1):
+            x = start_x + (20 - seat_no) * gap_x
+            seat_id = f"{prefix}{seat_no}"
+
+            seat_map[seat_id] = {
+                "x": x,
+                "y": y,
+                "w": 30,
+                "h": 18
+            }
+
+    # Meja nombor di sebelah kanan layout
+    right_side_positions = {
+        "18": (1155, 42),
+        "16": (1155, 70),
+        "14": (1155, 98),
+        "12": (1155, 126),
+        "10": (1155, 154),
+        "8": (1155, 182),
+        "6": (1155, 210),
+        "4": (1155, 238),
+        "2": (1155, 266),
+        "1": (1155, 294),
+        "3": (1155, 322),
+        "5": (1155, 350),
+        "7": (1155, 378),
+        "9": (1155, 406),
+        "11": (1155, 434),
+        "13": (1155, 462),
+        "15": (1155, 490),
+        "17": (1155, 518),
+    }
+
+    for meja, (x, y) in right_side_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 24,
+            "h": 18
+        }
+
+    return seat_map
+
+
+def show_highlighted_layout(image_path, group_df):
+    path = Path(image_path)
+
+    if not path.exists():
+        st.warning(f"Fail gambar '{image_path}' tidak dijumpai.")
+        return
+
+    image = Image.open(path).convert("RGBA")
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    seat_map = generate_seat_map()
+
+    meja_list = (
+        group_df["MEJA"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .unique()
+    )
+
+    missing_meja = []
+
+    for meja in meja_list:
+        if meja in seat_map:
+            info = seat_map[meja]
+
+            x = info["x"]
+            y = info["y"]
+            w = info["w"]
+            h = info["h"]
+
+            fill_color = (255, 0, 0, 90)
+            outline_color = (255, 0, 0, 255)
+
+            draw.rectangle(
+                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
+                fill=fill_color,
+                outline=outline_color,
+                width=4
+            )
+        else:
+            missing_meja.append(meja)
+
+    highlighted_image = Image.alpha_composite(image, overlay)
+    st.image(highlighted_image, use_container_width=True)
+
+    if missing_meja:
+        st.warning(f"Meja ini belum ada coordinate dalam layout: {', '.join(missing_meja)}")
+
+
+# =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
 if st.session_state.host_logged_in:
@@ -249,10 +373,18 @@ st.markdown(f"""
 ">
     <img src="data:image/png;base64,{img_base64}" width="50">
     <h2 style="margin:0; color:white;">
-        Majlis Makan Malam Rejimental Penghargaan Pengerusi KPA
+        Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
     </h2>
 </div>
 """, unsafe_allow_html=True)
+
+st.markdown(
+    "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat dan tandakan kehadiran.</div>",
+    unsafe_allow_html=True
+)
+
+st.markdown("---")
+
 
 # =========================================================
 # SEARCH SECTION
@@ -289,7 +421,7 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-        show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+        show_highlighted_layout(CENTER_IMAGE, group_df)
 
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
