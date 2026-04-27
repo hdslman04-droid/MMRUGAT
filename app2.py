@@ -67,10 +67,7 @@ CENTER_IMAGE = "LAYOUT SUSUNAN.png"
 
 DEFAULT_HOST_PASSWORD = "host123"
 
-required_cols = [
-    "NO TEN", "PKT", "NAMA PENUH", "PASUKAN", "JAWATAN",
-    "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN", "MEJA"
-]
+required_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
 
 def get_file_updated_time():
     files_to_check = [DATA_FILE, ATTENDANCE_FILE]
@@ -88,19 +85,13 @@ def get_file_updated_time():
     return latest_time.strftime("%d/%m/%Y %I:%M:%S %p")
 
 
-@st.cache_data
-def load_default_data():
-    file_path = Path(DATA_FILE)
-
-    if not file_path.exists():
-        st.error(f"Fail '{DATA_FILE}' tidak dijumpai.")
-        st.stop()
-
-    df_raw = pd.read_csv(file_path, encoding="cp1252", header=None)
-
-    headers = df_raw.iloc[2].tolist()
-    df = df_raw.iloc[3:].copy()
-    df.columns = headers
+def clean_csv(df_raw):
+    if "BIL" not in df_raw.columns:
+        headers = df_raw.iloc[0].tolist()
+        df = df_raw.iloc[1:].copy()
+        df.columns = headers
+    else:
+        df = df_raw.copy()
 
     df = df.dropna(how="all").reset_index(drop=True)
     df.columns = [str(col).strip() for col in df.columns]
@@ -111,22 +102,24 @@ def load_default_data():
     return df
 
 
+@st.cache_data
+def load_default_data():
+    file_path = Path(DATA_FILE)
+
+    if not file_path.exists():
+        st.error(f"Fail '{DATA_FILE}' tidak dijumpai.")
+        st.stop()
+
+    df_raw = pd.read_csv(file_path, encoding="utf-8")
+    return clean_csv(df_raw)
+
+
 def load_uploaded_files(uploaded_files):
     all_data = []
 
     for uploaded_file in uploaded_files:
-        df_raw = pd.read_csv(uploaded_file, encoding="cp1252", header=None)
-
-        headers = df_raw.iloc[2].tolist()
-        df = df_raw.iloc[3:].copy()
-        df.columns = headers
-
-        df = df.dropna(how="all").reset_index(drop=True)
-        df.columns = [str(col).strip() for col in df.columns]
-
-        for col in df.columns:
-            df[col] = df[col].fillna("").astype(str).str.strip()
-
+        df_raw = pd.read_csv(uploaded_file, encoding="utf-8")
+        df = clean_csv(df_raw)
         all_data.append(df)
 
     return pd.concat(all_data, ignore_index=True)
@@ -148,8 +141,7 @@ def load_attendance():
             pass
 
     return pd.DataFrame(columns=[
-        "NO TEN", "NAMA PENUH", "PKT", "PASUKAN", "JAWATAN",
-        "MENU", "PASANGAN", "MENU PASANGAN", "CATATAN",
+        "BIL", "NOTEN", "NAMA", "MENU", "MEJA",
         "STATUS_KEHADIRAN", "TARIKH_MASA"
     ])
 
@@ -261,7 +253,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown(
-    "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat pegawai dan tandakan kehadiran.</div>",
+    "<div class='center-caption'>Masukkan No Tentera untuk semak maklumat dan tandakan kehadiran.</div>",
     unsafe_allow_html=True
 )
 
@@ -284,73 +276,86 @@ st.markdown(
 search_no = st.text_input(
     "Masukkan No Tentera",
     max_chars=10,
-    placeholder="Contoh: 3011701"
+    placeholder="Contoh: 3004463"
 )
 
 if search_no:
-    result_df = df[df["NO TEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
+    result_df = df[df["NOTEN"].str.contains(search_no.strip(), case=False, na=False)].copy()
 
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
     else:
-        st.success(f"{len(result_df)} rekod dijumpai.")
+        bil_value = result_df.iloc[0]["BIL"]
+        group_df = df[df["BIL"] == bil_value].copy()
 
-        for idx, row in result_df.iterrows():
-            no_ten = str(row["NO TEN"]).strip()
-            nama = row["NAMA PENUH"]
+        st.success(f"Rekod dijumpai. BIL: {bil_value}")
+
+        st.markdown("### Maklumat Kehadiran")
+
+        for idx, row in group_df.iterrows():
+            noten = str(row["NOTEN"]).strip()
+            nama = row["NAMA"]
 
             st.markdown("---")
-
-            st.markdown(f"### {nama}")
-            st.write(f"**No Tentera:** {row['NO TEN']}")
-            st.write(f"**Pangkat:** {row['PKT']}")
-            st.write(f"**Pasukan:** {row['PASUKAN']}")
-            st.write(f"**Jawatan:** {row['JAWATAN']}")
-            st.write(f"**Meja:** {row['MEJA']}")
+            st.write(f"**BIL:** {row['BIL']}")
+            st.write(f"**No Tentera:** {row['NOTEN']}")
+            st.write(f"**Nama:** {row['NAMA']}")
             st.write(f"**Menu:** {row['MENU']}")
-            st.write(f"**Pasangan:** {row['PASANGAN']}")
-            st.write(f"**Menu Pasangan:** {row['MENU PASANGAN']}")
-            st.write(f"**Catatan:** {row['CATATAN']}")
+            st.write(f"**Meja:** {row['MEJA']}")
 
-            st.markdown("### Pelan Kedudukan Dewan")
-            show_image_if_exists(CENTER_IMAGE, use_container_width=True)
+            if "CATATAN" in row.index:
+                st.write(f"**Catatan:** {row['CATATAN']}")
 
             sudah_hadir = False
 
-            if not attendance_df.empty and "NO TEN" in attendance_df.columns:
-                sudah_hadir = no_ten in attendance_df["NO TEN"].astype(str).values
+            if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+                sudah_hadir = noten in attendance_df["NOTEN"].astype(str).values
 
             if sudah_hadir:
                 st.success("✅ TELAH HADIR")
             else:
                 st.warning("❌ BELUM HADIR")
 
-                if st.session_state.host_logged_in:
-                    if st.button("Submit / Tandakan Kehadiran", key=f"submit_{idx}_{no_ten}"):
+        st.markdown("### Pelan Kedudukan Dewan")
+        show_image_if_exists(CENTER_IMAGE, use_container_width=True)
 
-                        new_record = pd.DataFrame([{
-                            "NO TEN": row["NO TEN"],
-                            "NAMA PENUH": row["NAMA PENUH"],
-                            "PKT": row["PKT"],
-                            "PASUKAN": row["PASUKAN"],
-                            "JAWATAN": row["JAWATAN"],
+        if st.session_state.host_logged_in:
+            if st.button("Submit / Tandakan Kehadiran Kumpulan Ini"):
+
+                new_records = []
+
+                for idx, row in group_df.iterrows():
+                    noten = str(row["NOTEN"]).strip()
+
+                    already_exists = False
+                    if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+                        already_exists = noten in attendance_df["NOTEN"].astype(str).values
+
+                    if not already_exists:
+                        new_records.append({
+                            "BIL": row["BIL"],
+                            "NOTEN": row["NOTEN"],
+                            "NAMA": row["NAMA"],
                             "MENU": row["MENU"],
-                            "PASANGAN": row["PASANGAN"],
-                            "MENU PASANGAN": row["MENU PASANGAN"],
-                            "CATATAN": row["CATATAN"],
+                            "MEJA": row["MEJA"],
                             "STATUS_KEHADIRAN": "HADIR",
                             "TARIKH_MASA": datetime.now(
                                 ZoneInfo("Asia/Kuala_Lumpur")
                             ).strftime("%Y-%m-%d %H:%M:%S")
-                        }])
+                        })
 
-                        attendance_df = pd.concat([attendance_df, new_record], ignore_index=True)
-                        save_attendance(attendance_df)
-
-                        st.success(f"Kehadiran bagi {nama} berjaya direkodkan.")
-                        st.rerun()
+                if new_records:
+                    attendance_df = pd.concat(
+                        [attendance_df, pd.DataFrame(new_records)],
+                        ignore_index=True
+                    )
+                    save_attendance(attendance_df)
+                    st.success("Kehadiran berjaya direkodkan.")
+                    st.rerun()
                 else:
-                    st.info("Hanya host boleh tandakan kehadiran.")
+                    st.info("Semua dalam BIL ini telah ditandakan hadir.")
+        else:
+            st.info("Hanya host boleh tandakan kehadiran.")
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
 
