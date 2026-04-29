@@ -339,15 +339,10 @@ def generate_seat_map():
 
     return seat_map
 
-# Function to generate highlighted layout based on the group data
-def generate_highlighted_layout(group_df):
-    # Path to the base seating layout image
-    path = Path("path_to_your_image.png")
-
-    if not path.exists():
-        return "", []
-
-    image = Image.open(path).convert("RGBA")
+# Function to generate highlighted layout based on the group data (seats about to be occupied)
+def generate_highlighted_layout(group_df, image_file):
+    # Open the uploaded image (using Streamlit's file uploader)
+    image = Image.open(image_file).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
@@ -366,7 +361,7 @@ def generate_highlighted_layout(group_df):
 
     missing_meja = []
 
-    # Loop through the seat data and highlight the seats
+    # Loop through the seat data and highlight the seats that will be occupied
     for meja in meja_list:
         if meja in seat_map:
             info = seat_map[meja]
@@ -376,11 +371,11 @@ def generate_highlighted_layout(group_df):
             w = info["w"]
             h = info["h"]
 
-            # Draw a semi-transparent red rectangle around the seat
+            # Draw a semi-transparent green rectangle around the seat to highlight it
             draw.rectangle(
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=(255, 0, 0, 90),  # Transparent red
-                outline=(255, 0, 0, 255),  # Solid red border
+                fill=(0, 255, 0, 90),  # Transparent green
+                outline=(0, 255, 0, 255),  # Solid green border
                 width=4
             )
         else:
@@ -577,6 +572,9 @@ if search_no:
 
         st.markdown("### Pelan Kedudukan Dewan")
         layout_base64, missing_meja = generate_highlighted_layout(df)
+
+ # Generate the highlighted seating layout
+        layout_base64, missing_meja = generate_highlighted_layout(df, image_file)
 
         if layout_base64:
             # Display the image in Streamlit
