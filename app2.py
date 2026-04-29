@@ -335,19 +335,19 @@ def generate_seat_map():
             "h": 12
         }
 
-    # Corrected positions for the red box (DL11 and DL12 only)
+    # Corrected positions for the red box (highlighting DL11 and DL12 only)
     red_box_positions = {
         "DL11": (500, 280),  # X, Y for DL11
         "DL12": (540, 280),  # X, Y for DL12
     }
 
-    # Set the size of the red box to cover both seats with the correct spacing
+    # Adjust the size of the red box to cover both DL11 and DL12 properly
     for meja, (x, y) in red_box_positions.items():
         seat_map[meja] = {
             "x": x,
             "y": y,
-            "w": 60,  # Wider width to cover both DL11 and DL12
-            "h": 12   # Height remains the same
+            "w": 50,  # Wider width to cover both DL11 and DL12
+            "h": 20   # Height to fit properly around the seats
         }
 
     return seat_map
@@ -411,7 +411,6 @@ def show_highlighted_layout(image_path, group_df):
 
     if missing_meja:
         st.warning(f"Meja ini belum ada coordinate dalam layout: {', '.join(missing_meja)}")
-
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
