@@ -247,6 +247,34 @@ def get_base64_image(image_path):
 # HIGHLIGHT FUNCTIONS
 # HIGHLIGHT ONLY TABLE NUMBER BOXES FROM THE FILTERED GROUP
 # =========================================================
+import base64
+import io
+from pathlib import Path
+from PIL import Image, ImageDraw
+
+# =========================================================
+# IMAGE PATH
+# Change this to your actual new image file name/path
+# =========================================================
+CENTER_IMAGE = "GAMBAR BARU 3.png"
+# Example if full path:
+# CENTER_IMAGE = "/mount/src/mmrugat/GAMBAR BARU 3.png"
+
+# =========================================================
+# REFERENCE SIZE OF THE ANALYZED IMAGE
+# This coordinate setup is based on the new image size:
+# 2048 x 1152
+# =========================================================
+REF_W = 2048
+REF_H = 1152
+
+
+# =========================================================
+# NORMALIZE MEJA VALUE
+# Example:
+# " ar 1 " -> "AR1"
+# "1.0" -> "1"
+# =========================================================
 def normalize_meja(value):
     value = str(value).strip().upper()
 
