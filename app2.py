@@ -335,26 +335,20 @@ def generate_seat_map():
             "h": 12
         }
 
-    # Adjusted positions for the red box (for the entire section from CL to AR)
+    # Adjusted positions for the red highlight (for DL11 and DL12 only)
     red_box_positions = {
-        "CL": (140, 420),
-        "CR": (1160, 420),
-        "BL": (140, 500),
-        "BR": (1160, 500),
-        "AL": (140, 580),
-        "AR": (1160, 580),
+        "DL11": (500, 280),  # X, Y for DL11
+        "DL12": (540, 280),  # X, Y for DL12
     }
 
-    # Adjust size to match the full section (wider red box to cover more)
-    red_box_width = 1020  # Adjusted total width of the red box
-    red_box_height = 160  # Adjusted height to fully cover seat rows from CL to AR
-
-    seat_map["RED_BOX"] = {
-        "x": 140,  # X position of the red box (left side)
-        "y": 420,  # Y position of the red box (middle row)
-        "w": red_box_width,
-        "h": red_box_height
-    }
+    # Set the size of the red box to cover both seats
+    for meja, (x, y) in red_box_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 50,  # Increase the width to make the red box bigger
+            "h": 20   # Adjust height to fit the red highlight better
+        }
 
     return seat_map
 
@@ -404,8 +398,8 @@ def show_highlighted_layout(image_path, group_df):
         else:
             missing_meja.append(meja)
 
-    # Highlight the red box section for the entire CL to AR section
-    red_box = seat_map.get("RED_BOX")
+    # Highlight the red box section for DL11 and DL12 only
+    red_box = seat_map.get("DL11")  # Since both DL11 and DL12 are part of the same red box
     if red_box:
         x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
         red_fill = (255, 0, 0, 90)
