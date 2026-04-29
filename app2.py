@@ -27,7 +27,7 @@ st.markdown("""
     }
 
     .stMarkdown p {
-        font-size: 20px; /* Adjust body text size */
+        font-size: 30px; /* Adjust body text size */
     }
      
 .block-container {
