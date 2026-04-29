@@ -567,7 +567,7 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-        layout_base64, missing_meja = generate_highlighted_layout(group_df)
+        layout_base64, missing_meja = generate_highlighted_layout(group_df, CENTER_IMAGE)
         if layout_base64:
             st.markdown(f"""
             <div style="text-align: center;">
