@@ -443,8 +443,8 @@ def generate_highlighted_layout(group_df):
 
             draw.rectangle(
                 [x1, y1, x2, y2],
-                fill=(255, 0, 0, 70),
-                outline=(255, 0, 0, 255),
+                fill=(0, 102, 255, 70),
+                outline=(0, 102, 255, 255),
                 width=4
             )
         else:
