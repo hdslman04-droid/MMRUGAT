@@ -335,19 +335,19 @@ def generate_seat_map():
             "h": 12
         }
 
-    # Adjusted positions for the red highlight (for DL11 and DL12 only)
+    # Corrected positions for the red box (DL11 and DL12 only)
     red_box_positions = {
         "DL11": (500, 280),  # X, Y for DL11
         "DL12": (540, 280),  # X, Y for DL12
     }
 
-    # Set the size of the red box to cover both seats
+    # Set the size of the red box to cover both seats with the correct spacing
     for meja, (x, y) in red_box_positions.items():
         seat_map[meja] = {
             "x": x,
             "y": y,
-            "w": 50,  # Increase the width to make the red box bigger
-            "h": 20   # Adjust height to fit the red highlight better
+            "w": 60,  # Wider width to cover both DL11 and DL12
+            "h": 12   # Height remains the same
         }
 
     return seat_map
