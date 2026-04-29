@@ -480,7 +480,7 @@ if img_base64:
     <div style="
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 18px;
         background: linear-gradient(90deg, #020617, #111827);
         padding: 15px;
         border-radius: 15px;
