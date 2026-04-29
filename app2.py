@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 import base64
 from PIL import Image, ImageDraw
 
-# Set page config for Streamlit
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
     page_icon="TDM.png",
@@ -17,7 +16,62 @@ st.set_page_config(
 if "host_logged_in" not in st.session_state:
     st.session_state.host_logged_in = False
 
-# Define constants
+st.markdown("""
+<style>
+   .stTextInput {
+        font-size: 20px; /* Reduce font size of the input */
+    }
+
+    .stMarkdown h1, .stMarkdown h2 {
+        font-size: 20px; /* Adjust heading size */
+    }
+
+    .stMarkdown p {
+        font-size: 30px; /* Adjust body text size */
+    }
+     
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 900px;
+}
+
+.time-box {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: #f3f4f6;
+    margin-top: 14px;
+    margin-bottom: 18px;
+    color: black;
+}
+
+.center-caption {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #555;
+}
+
+div[data-testid="stTextInput"] {
+    max-width: 420px;
+}
+
+@media (max-width: 640px) {
+    .block-container {
+        padding-top: 0.5rem;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# File paths and constants
 DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 LOGO_UGAT = "Logo-UGAT.png"
@@ -85,6 +139,57 @@ def load_default_data(file_mtime):
     df_raw = pd.read_csv(file_path, encoding="utf-8")
     return clean_csv(df_raw)
 
+def load_uploaded_files(uploaded_files):
+    all_data = []
+    for uploaded_file in uploaded_files:
+        df_raw = pd.read_csv(uploaded_file, encoding="utf-8")
+        df = clean_csv(df_raw)
+        all_data.append(df)
+    if not all_data:
+        return pd.DataFrame()
+    return pd.concat(all_data, ignore_index=True)
+
+def load_attendance():
+    file_path = Path(ATTENDANCE_FILE)
+    if file_path.exists():
+        try:
+            attendance_df = pd.read_csv(file_path)
+            attendance_df.columns = [str(col).strip().upper() for col in attendance_df.columns]
+            for col in attendance_df.columns:
+                attendance_df[col] = attendance_df[col].fillna("").astype(str).str.strip()
+            if "NOTEN" in attendance_df.columns:
+                attendance_df["NOTEN"] = attendance_df["NOTEN"].str.replace(".0", "", regex=False)
+            return attendance_df
+        except Exception:
+            pass
+    return pd.DataFrame(columns=["BIL", "NOTEN", "NAMA", "MENU", "MEJA", "STATUS_KEHADIRAN", "TARIKH_MASA"])
+
+def save_attendance(attendance_df):
+    attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
+
+def reset_attendance():
+    reset_attendance_df = pd.DataFrame(columns=["BIL", "NOTEN", "NAMA", "MENU", "MEJA", "STATUS_KEHADIRAN", "TARIKH_MASA"])
+    reset_attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
+
+def show_image_if_exists(image_path, width=None, use_container_width=False):
+    path = Path(image_path)
+    if path.exists():
+        st.image(str(path), width=width, use_container_width=use_container_width)
+
+def verify_host_password(password_input):
+    try:
+        real_password = st.secrets["HOST_PASSWORD"]
+    except Exception:
+        real_password = DEFAULT_HOST_PASSWORD
+    return password_input == real_password
+
+def get_base64_image(image_path):
+    path = Path(image_path)
+    if not path.exists():
+        return ""
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
@@ -149,7 +254,6 @@ if st.session_state.host_logged_in:
     if uploaded_files:
         try:
             new_df = load_uploaded_files(uploaded_files)
-
             missing_uploaded_cols = [col for col in required_cols if col not in new_df.columns]
             if missing_uploaded_cols:
                 st.sidebar.error(f"CSV baru tidak lengkap. Kolum tiada: {missing_uploaded_cols}")
@@ -189,134 +293,119 @@ if missing_cols:
     st.stop()
 
 # =========================================================
+# BANNER HEADER
+# =========================================================
+img_base64 = get_base64_image(LOGO_UGAT)
+
+if img_base64:
+    st.markdown(f"""
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 23px;
+        background: linear-gradient(90deg, #020617, #111827);
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        margin-top: 30px; /* Adjust this value to move the banner down */
+    ">
+        <img src="data:image/png;base64,{img_base64}" width="60">
+        <h2 style="
+            margin: 0;
+            color: #e0f2f1; 
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 22px;
+        ">
+            Majlis Makan Malam 
+            Rejimental Penghargaan 
+            Brigedier Jeneral Dato' Zamzuri bin Harun
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: linear-gradient(90deg, #020617, #111827);
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+         margin-top: 30px; /* Adjust this value to move the banner down */
+    ">
+        <h2 style="
+            margin: 0;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 22px;
+        ">
+            Majlis Makan Malam 
+            Rejimental Penghargaan 
+            Brigedier Jeneral Dato' Zamzuri bin Harun
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# =========================================================
 # SEARCH SECTION
 # =========================================================
-search_no = st.text_input("Nombor Tentera:", max_chars=7, placeholder="Contoh: 3004463")
+st.markdown(
+    "<h3 style='color:#38bdf8;'>LOGIN</h3>",
+    unsafe_allow_html=True
+)
+
+search_no = st.text_input(
+    "Nombor Tentera:",
+    max_chars=7,
+    placeholder="Contoh: 3004463"
+)
+
 if search_no:
     search_value = search_no.strip()
-    result_df = df[df["NOTEN"].astype(str).str.contains(search_value, case=False, na=False)].copy()
+
+    result_df = df[
+        df["NOTEN"].astype(str).str.contains(search_value, case=False, na=False)
+    ].copy()
+
     if result_df.empty:
         st.warning("Tiada rekod dijumpai untuk nombor tentera tersebut.")
     else:
         bil_value = str(result_df.iloc[0]["BIL"]).strip()
         group_df = df[df["BIL"].astype(str).str.strip() == bil_value].copy()
+
         st.success(f"Rekod dijumpai")
+
         st.markdown("### Maklumat Kehadiran")
+
         display_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
+
+        if "CATATAN" in group_df.columns:
+            display_cols.append("CATATAN")
+
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-        layout_base64, missing_meja = generate_highlighted_layout(df)
-        if layout_base64:
-            st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
-            if missing_meja:
-                st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
-        else:
-            st.error("Error generating the highlighted image.")
-else:
-    st.info("Sila masukkan No Tentera untuk membuat carian.")
+    layout_base64, missing_meja = generate_highlighted_layout(df)
 
-# =========================================================
-# HOST ONLY - LIVE ATTENDANCE MANAGEMENT
-# =========================================================
-if st.session_state.host_logged_in:
-    st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
+    if layout_base64:
+        # Display the image in Streamlit
+        st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
 
-    hadir_noten = []
-
-    if not attendance_df.empty and "NOTEN" in attendance_df.columns:
-        hadir_noten = attendance_df["NOTEN"].astype(str).str.strip().tolist()
-
-    belum_hadir_df = df[
-        ~df["NOTEN"].astype(str).str.strip().isin(hadir_noten)
-    ].copy()
-
-    total_semua = len(df)
-    total_hadir = len(attendance_df)
-    total_belum_hadir = len(belum_hadir_df)
-
-    st.info(f"Jumlah Keseluruhan: {total_semua}")
-    st.success(f"Jumlah Telah Hadir: {total_hadir}")
-    st.warning(f"Jumlah Belum Hadir: {total_belum_hadir}")
-
-    st.markdown("### ✅ Telah Hadir")
-
-    if attendance_df.empty:
-        st.warning("Belum ada rekod kehadiran.")
+        # Display missing seats if any
+        if missing_meja:
+            st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
     else:
-        hadir_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
-        st.dataframe(attendance_df[hadir_cols], use_container_width=True)
+        st.error("Error generating the highlighted image.")
+        
+        st.markdown(
+            f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
+            unsafe_allow_html=True
+        )
 
-    st.markdown("### ❌ Belum Hadir")
-
-    if belum_hadir_df.empty:
-        st.success("Semua telah hadir.")
-    else:
-        belum_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
-        st.dataframe(belum_hadir_df[belum_cols], use_container_width=True)
-
-    # Allow for CSV download of attendance records
-    csv_data = attendance_df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="Muat Turun Rekod Kehadiran",
-        data=csv_data,
-        file_name="attendance_records.csv",
-        mime="text/csv"
-    )
-
-# =========================================================
-# FUNCTION TO MANAGE ATTENDANCE
-# =========================================================
-def reset_attendance():
-    reset_attendance_df = pd.DataFrame(columns=[
-        "BIL", "NOTEN", "NAMA", "MENU", "MEJA",
-        "STATUS_KEHADIRAN", "TARIKH_MASA"
-    ])
-    reset_attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
-
-def save_attendance(attendance_df):
-    attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
-
-def load_attendance():
-    file_path = Path(ATTENDANCE_FILE)
-    if file_path.exists():
-        try:
-            attendance_df = pd.read_csv(file_path)
-            attendance_df.columns = [str(col).strip().upper() for col in attendance_df.columns]
-            for col in attendance_df.columns:
-                attendance_df[col] = attendance_df[col].fillna("").astype(str).str.strip()
-
-            if "NOTEN" in attendance_df.columns:
-                attendance_df["NOTEN"] = attendance_df["NOTEN"].str.replace(".0", "", regex=False)
-
-            return attendance_df
-        except Exception:
-            pass
-    return pd.DataFrame(columns=[
-        "BIL", "NOTEN", "NAMA", "MENU", "MEJA",
-        "STATUS_KEHADIRAN", "TARIKH_MASA"
-    ])
-
-def load_uploaded_files(uploaded_files):
-    all_data = []
-    for uploaded_file in uploaded_files:
-        df_raw = pd.read_csv(uploaded_file, encoding="utf-8")
-        df = clean_csv(df_raw)
-        all_data.append(df)
-
-    if not all_data:
-        return pd.DataFrame()
-
-    return pd.concat(all_data, ignore_index=True)
-
-# =========================================================
-# HANDLE ATTENDANCE RECORD UPLOAD AND MARKING
-# =========================================================
-if st.session_state.host_logged_in:
-    if not attendance_df.empty:
-        st.markdown("### Kehadiran / Attendance")
-
-        # Check if all members in the selected group have attended
         sudah_hadir_semua = True
 
         for idx, row in group_df.iterrows():
@@ -330,7 +419,6 @@ if st.session_state.host_logged_in:
             if not sudah_hadir:
                 sudah_hadir_semua = False
 
-        # Display attendance status
         if sudah_hadir_semua:
             st.success("✅ TELAH HADIR")
         else:
@@ -375,3 +463,41 @@ if st.session_state.host_logged_in:
                         st.info("Semua dalam BIL ini telah ditandakan hadir.")
         else:
             st.info("Hanya host boleh tandakan kehadiran.")
+
+else:
+    st.info("Sila masukkan No Tentera untuk membuat carian.")
+
+st.markdown("---")
+
+
+# =========================================================
+# LIVE ATTENDANCE - HOST ONLY
+# =========================================================
+if st.session_state.host_logged_in:
+    st.markdown("### 📋 Live Attendance / Kehadiran Semasa")
+
+    hadir_noten = []
+
+    if not attendance_df.empty and "NOTEN" in attendance_df.columns:
+        hadir_noten = attendance_df["NOTEN"].astype(str).str.strip().tolist()
+
+    belum_hadir_df = df[
+        ~df["NOTEN"].astype(str).str.strip().isin(hadir_noten)
+    ].copy()
+
+    total_semua = len(df)
+    total_hadir = len(attendance_df)
+    total_belum_hadir = len(belum_hadir_df)
+
+    st.info(f"Jumlah Keseluruhan: {total_semua}")
+    st.success(f"Jumlah Telah Hadir: {total_hadir}")
+    st.warning(f"Jumlah Belum Hadir: {total_belum_hadir}")
+
+    st.markdown("### ✅ Telah Hadir")
+
+    if attendance_df.empty:
+        st.warning("Belum ada rekod kehadiran.")
+    else:
+        st.dataframe(attendance_df, use_container_width=True)
+
+    st.markdown("### ❌
