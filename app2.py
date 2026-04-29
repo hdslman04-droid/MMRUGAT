@@ -311,9 +311,9 @@ def generate_seat_map():
     return seat_map
 
 # Function to generate the highlighted layout based on the `MEJA` for a specific `NOTEN`
-def generate_highlighted_layout(group_df, noten):
+def generate_highlighted_layout(group_df, search_noten):
     # Search for the record corresponding to `NOTEN`
-    person_info = group_df[group_df["NOTEN"] == noten]
+    person_info = group_df[group_df["NOTEN"] == search_noten]
 
     if person_info.empty:
         return None, None  # No record found
