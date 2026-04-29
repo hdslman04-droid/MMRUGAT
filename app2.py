@@ -71,7 +71,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
+DATA_FILE = "DATA BARU latest2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_UGAT = "Logo-UGAT.png"
