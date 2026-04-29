@@ -345,9 +345,9 @@ def generate_seat_map():
         "AR": (1160, 580),
     }
 
-    # Adjust size to match the full section
-    red_box_width = 1020  # Total width of the highlighted section (from left to right)
-    red_box_height = 80  # Height covering all rows (height from top to bottom)
+    # Adjust size to match the full section (wider red box to cover more)
+    red_box_width = 1020  # Adjusted total width of the red box
+    red_box_height = 90  # Adjusted height to fully cover seat rows
 
     seat_map["RED_BOX"] = {
         "x": 140,  # X position of the red box (left side)
