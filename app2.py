@@ -276,70 +276,69 @@ def get_base64_image(image_path):
 def generate_seat_map():
     seat_map = {}
 
+    # Y coordinate for each row (adjusted based on the image layout)
     row_y = {
-        "FL": 28,
-        "FR": 84,
-        "EL": 112,
-        "ER": 168,
-        "DL": 196,
-        "DR": 252,
-        "CL": 308,
-        "CR": 364,
-        "BL": 392,
-        "BR": 448,
-        "AL": 476,
-        "AR": 532,
+        "FL": 120,
+        "FR": 160,
+        "EL": 200,
+        "ER": 240,
+        "DL": 280,
+        "DR": 320,
+        "CL": 360,
+        "CR": 400,
+        "BL": 440,
+        "BR": 480,
+        "AL": 520,
+        "AR": 560,
     }
 
+    # Starting X position for seats and gap between each seat
     start_x = 70
     gap_x = 50
 
+    # Create seat map for each prefix (FL, FR, etc.) and seat number (1 -> 20)
     for prefix, y in row_y.items():
-        for seat_no in range(20, 0, -1):
-            x = start_x + (20 - seat_no) * gap_x
+        for idx, seat_no in enumerate(range(20, 0, -1)):
             seat_id = f"{prefix}{seat_no}"
-
+            x = start_x + (20 - seat_no) * gap_x
             seat_map[seat_id] = {
                 "x": x,
                 "y": y,
-                "w": 30,
-                "h": 18
+                "w": 22,
+                "h": 12
             }
 
+    # Right side seats with fixed coordinates
     right_side_positions = {
-        "18": (1155, 42),
-        "16": (1155, 70),
-        "14": (1155, 98),
-        "12": (1155, 126),
-        "10": (1155, 154),
-        "8": (1155, 182),
-        "6": (1155, 210),
-        "4": (1155, 238),
-        "2": (1155, 266),
-        "1": (1155, 294),
-        "3": (1155, 322),
-        "5": (1155, 350),
-        "7": (1155, 378),
-        "9": (1155, 406),
-        "11": (1155, 434),
-        "13": (1155, 462),
-        "15": (1155, 490),
-        "17": (1155, 518),
+        "13": (1160, 200),
+        "11": (1160, 220),
+        "9":  (1160, 240),
+        "7":  (1160, 260),
+        "5":  (1160, 280),
+        "3":  (1160, 300),
+        "1":  (1160, 320),
+        "2":  (1160, 340),
+        "4":  (1160, 360),
+        "6":  (1160, 380),
+        "8":  (1160, 400),
+        "10": (1160, 420),
+        "12": (1160, 440),
+        "14": (1160, 460),
     }
 
+    # Add right-side positions to seat map
     for meja, (x, y) in right_side_positions.items():
         seat_map[meja] = {
             "x": x,
             "y": y,
-            "w": 24,
-            "h": 18
+            "w": 16,
+            "h": 12
         }
 
     return seat_map
 
-
-def generate_highlighted_layout(group_df):
-    path = Path(CENTER_IMAGE)
+def generate_highlighted_layout(group_df, image_path):
+    path = Path(image_path)
 
     if not path.exists():
         return "", []
@@ -370,23 +369,23 @@ def generate_highlighted_layout(group_df):
             w = info["w"]
             h = info["h"]
 
+            # Draw the rectangle for each highlighted seat
             draw.rectangle(
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=(255, 0, 0, 90),
-                outline=(255, 0, 0, 255),
+                fill=(255, 0, 0, 90),  # Semi-transparent red fill
+                outline=(255, 0, 0, 255),  # Solid red outline
                 width=4
             )
         else:
             missing_meja.append(meja)
 
-    highlighted = Image.alpha_composite(image, overlay)
+    # Combine the overlay with the original image
+    highlighted_image = Image.alpha_composite(image, overlay)
 
-    # Use BytesIO to save the image in memory instead of to disk
+    # Convert to base64 for embedding in HTML (optional)
     img_byte_arr = io.BytesIO()
-    highlighted.convert("RGB").save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)  # Reset the pointer to the start of the BytesIO object
-
-    # Convert to base64 for embedding in HTML
+    highlighted_image.save(img_byte_arr, format="PNG")
+    img_byte_arr.seek(0)
     layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
 
     return layout_base64, missing_meja
