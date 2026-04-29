@@ -337,21 +337,24 @@ def generate_seat_map():
 
     # Adjusted positions for the red box (BRASS BAND & LIVE BAND section)
     red_box_positions = {
-        "CL": (140, 420),  # Left side column
-        "CR": (1160, 420),  # Right side column
-        "BL": (140, 500),  # Left side column
-        "BR": (1160, 500),  # Right side column
-        "AL": (140, 580),  # Left side column
-        "AR": (1160, 580),  # Right side column
+        "CL": (140, 410),
+        "CR": (1160, 410),
+        "BL": (140, 490),
+        "BR": (1160, 490),
+        "AL": (140, 570),
+        "AR": (1160, 570),
     }
 
-    for meja, (x, y) in red_box_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 16,
-            "h": 12
-        }
+    # Adjust size to match the full section
+    red_box_width = 1020  # Total width of the highlighted section (from left to right)
+    red_box_height = 80  # Height covering all rows (height from top to bottom)
+
+    seat_map["RED_BOX"] = {
+        "x": 140,  # X position of the red box (left side)
+        "y": 410,  # Y position of the red box (middle row)
+        "w": red_box_width,
+        "h": red_box_height
+    }
 
     return seat_map
 
@@ -400,6 +403,14 @@ def show_highlighted_layout(image_path, group_df):
             )
         else:
             missing_meja.append(meja)
+
+    # Highlight the red box section
+    red_box = seat_map.get("RED_BOX")
+    if red_box:
+        x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
+        red_fill = (255, 0, 0, 90)
+        red_outline = (255, 0, 0, 255)
+        draw.rectangle([x, y, x + w, y + h], fill=red_fill, outline=red_outline, width=4)
 
     highlighted_image = Image.alpha_composite(image, overlay)
     st.image(highlighted_image, use_container_width=True)
