@@ -294,7 +294,6 @@ def generate_seat_map():
     start_x = 70
     gap_x = 50
 
-    # Generate seat positions for each row
     for prefix, y in row_y.items():
         for seat_no in range(20, 0, -1):
             x = start_x + (20 - seat_no) * gap_x
@@ -307,7 +306,6 @@ def generate_seat_map():
                 "h": 18
             }
 
-    # Right-side specific seat positions
     right_side_positions = {
         "18": (1155, 42),
         "16": (1155, 70),
@@ -339,7 +337,7 @@ def generate_seat_map():
 
     return seat_map
 
-# Function to generate highlighted layout based on the group data (seats about to be occupied)
+# Function to highlight the layout with specific seats (MEJA) based on the CSV data
 def generate_highlighted_layout(group_df):
     # Load the seating plan image
     path = "GAMBAR BARU 3.png"  # This is your image path (no need to upload image)
@@ -350,7 +348,7 @@ def generate_highlighted_layout(group_df):
     # Get the seat map
     seat_map = generate_seat_map()
 
-    # Extract seat IDs from the dataframe
+    # Extract the seat IDs (MEJA) from the dataframe
     meja_list = (
         group_df["MEJA"]
         .dropna()
@@ -362,7 +360,7 @@ def generate_highlighted_layout(group_df):
 
     missing_meja = []
 
-    # Loop through the seat data and highlight the seats that will be occupied
+    # Loop through the seat data and highlight the seats
     for meja in meja_list:
         if meja in seat_map:
             info = seat_map[meja]
@@ -584,6 +582,7 @@ if search_no:
             st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
     else:
         st.error("Error generating the highlighted image.")
+        
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
             unsafe_allow_html=True
