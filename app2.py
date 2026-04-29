@@ -703,7 +703,7 @@ if search_no:
                     else:
                         st.info("Semua dalam BIL ini telah ditandakan hadir.")
         else:
-            st.info("Hanya host boleh tandakan kehadiran.")
+            st.info("Sila ke kaunter pendaftaran untuk mengesahkan kehadiran.")
 
 else:
     st.info("Sila masukkan No Tentera untuk membuat carian.")
@@ -742,7 +742,6 @@ if st.session_state.host_logged_in:
         st.dataframe(attendance_df, use_container_width=True)
 
     st.markdown("### ❌ Belum Hadir")
-    st.markdown("### ❌ Sila ke kaunter pendaftaran untuk mengesahkan kehadiran")
 
     if belum_hadir_df.empty:
         st.success("Semua telah hadir.")
