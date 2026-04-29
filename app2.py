@@ -368,6 +368,72 @@ def generate_seat_map(img_w, img_h):
 
 
 # =========================================================
+# GENERATE HIGHLIGHTED LAYOUT
+# IMPORTANT:
+# Pass group_df here, NOT full df
+# =========================================================
+def generate_highlighted_layout(group_df):
+    path = Path(CENTER_IMAGE)
+
+    if not path.exists():
+        return "", []
+
+    image = Image.open(path).convert("RGBA")
+    img_w, img_h = image.size
+
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    seat_map = generate_seat_map(img_w, img_h)
+
+    meja_list = (
+        group_df["MEJA"]
+        .dropna()
+        .astype(str)
+        .apply(normalize_meja)
+        .unique()
+    )
+
+    missing_meja = []
+
+    for meja in meja_list:
+        if meja in seat_map:
+            info = seat_map[meja]
+
+            x = info["x"]
+            y = info["y"]
+            w = info["w"]
+            h = info["h"]
+
+            pad_x = 4
+            pad_y = 4
+
+            x1 = x - (w // 2) - pad_x
+            y1 = y - (h // 2) - pad_y
+            x2 = x + (w // 2) + pad_x
+            y2 = y + (h // 2) + pad_y
+
+            draw.rectangle(
+                [x1, y1, x2, y2],
+                fill=(255, 0, 0, 70),
+                outline=(255, 0, 0, 255),
+                width=4
+            )
+        else:
+            missing_meja.append(meja)
+
+    highlighted = Image.alpha_composite(image, overlay)
+
+    img_byte_arr = io.BytesIO()
+    highlighted.convert("RGB").save(img_byte_arr, format="PNG")
+    img_byte_arr.seek(0)
+
+    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
+
+    return layout_base64, missing_meja
+
+
+# =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
 if st.session_state.host_logged_in:
