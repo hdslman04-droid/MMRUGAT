@@ -4,8 +4,8 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
-from PIL import Image, ImageDraw
 import io
+from PIL import Image, ImageDraw
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
@@ -20,63 +20,62 @@ if "host_logged_in" not in st.session_state:
 st.markdown("""
 <style>
    .stTextInput {
-        font-size: 20px; /* Reduce font size of the input */
+        font-size: 20px;
     }
 
     .stMarkdown h1, .stMarkdown h2 {
-        font-size: 20px; /* Adjust heading size */
+        font-size: 20px;
     }
 
     .stMarkdown p {
-        font-size: 30px; /* Adjust body text size */
+        font-size: 30px;
     }
-     
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 2rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    max-width: 900px;
-}
 
-.time-box {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 600;
-    padding: 10px;
-    border-radius: 10px;
-    background-color: #f3f4f6;
-    margin-top: 14px;
-    margin-bottom: 18px;
-    color: black;
-}
-
-.center-caption {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #555;
-}
-
-div[data-testid="stTextInput"] {
-    max-width: 420px;
-}
-
-@media (max-width: 640px) {
     .block-container {
-        padding-top: 0.5rem;
-        padding-left: 0.7rem;
-        padding-right: 0.7rem;
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        max-width: 900px;
     }
-}
+
+    .time-box {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        padding: 10px;
+        border-radius: 10px;
+        background-color: #f3f4f6;
+        margin-top: 14px;
+        margin-bottom: 18px;
+        color: black;
+    }
+
+    .center-caption {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #555;
+    }
+
+    div[data-testid="stTextInput"] {
+        max-width: 420px;
+    }
+
+    @media (max-width: 640px) {
+        .block-container {
+            padding-top: 0.5rem;
+            padding-left: 0.7rem;
+            padding-right: 0.7rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
-
 
 DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_UGAT = "Logo-UGAT.png"
-CENTER_IMAGE = "GAMBAR BARU 3.png"
+CENTER_IMAGE = "GAMBAR BARU 3.png"   # <-- change this if your new image has another filename
 
 DEFAULT_HOST_PASSWORD = "salman"
 
@@ -88,10 +87,8 @@ required_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
 # =========================================================
 def get_file_mtime(file_path):
     path = Path(file_path)
-
     if path.exists():
         return path.stat().st_mtime
-
     return 0
 
 
@@ -113,23 +110,15 @@ def get_file_updated_time():
 
 def clean_csv(df_raw):
     df_raw = df_raw.dropna(how="all").reset_index(drop=True)
-
-    # Bersihkan column sedia ada
     df_raw.columns = [str(col).strip().upper() for col in df_raw.columns]
 
-    # Jika CSV memang sudah ada header yang betul
     if all(col in df_raw.columns for col in required_cols):
         df = df_raw.copy()
-
     else:
         header_row_index = None
 
-        # Cari row sebenar yang mengandungi BIL, NOTEN, NAMA, MENU, MEJA
         for i in range(len(df_raw)):
-            row_values = [
-                str(value).strip().upper()
-                for value in df_raw.iloc[i].tolist()
-            ]
+            row_values = [str(value).strip().upper() for value in df_raw.iloc[i].tolist()]
 
             if (
                 "BIL" in row_values
@@ -148,27 +137,19 @@ def clean_csv(df_raw):
             )
             st.stop()
 
-        headers = [
-            str(value).strip().upper()
-            for value in df_raw.iloc[header_row_index].tolist()
-        ]
-
+        headers = [str(value).strip().upper() for value in df_raw.iloc[header_row_index].tolist()]
         df = df_raw.iloc[header_row_index + 1:].copy()
         df.columns = headers
 
-    # Buang column kosong / unnamed
     df = df.loc[:, df.columns.notna()]
     df = df.loc[:, [str(col).strip() != "" for col in df.columns]]
     df = df.loc[:, ~df.columns.astype(str).str.upper().str.startswith("UNNAMED")]
-
-    # Bersihkan data
     df = df.dropna(how="all").reset_index(drop=True)
     df.columns = [str(col).strip().upper() for col in df.columns]
 
     for col in df.columns:
         df[col] = df[col].fillna("").astype(str).str.strip()
 
-    # Buang .0 jika Excel convert nombor kepada decimal
     if "BIL" in df.columns:
         df["BIL"] = df["BIL"].str.replace(".0", "", regex=False)
 
@@ -176,7 +157,7 @@ def clean_csv(df_raw):
         df["NOTEN"] = df["NOTEN"].str.replace(".0", "", regex=False)
 
     if "MEJA" in df.columns:
-        df["MEJA"] = df["MEJA"].str.upper().str.replace(".0", "", regex=False)
+        df["MEJA"] = df["MEJA"].str.replace(".0", "", regex=False).str.upper().str.strip()
 
     return df
 
@@ -240,15 +221,7 @@ def reset_attendance():
         "BIL", "NOTEN", "NAMA", "MENU", "MEJA",
         "STATUS_KEHADIRAN", "TARIKH_MASA"
     ])
-
     reset_attendance_df.to_csv(ATTENDANCE_FILE, index=False, encoding="utf-8")
-
-
-def show_image_if_exists(image_path, width=None, use_container_width=False):
-    path = Path(image_path)
-
-    if path.exists():
-        st.image(str(path), width=width, use_container_width=use_container_width)
 
 
 def verify_host_password(password_input):
@@ -271,93 +244,47 @@ def get_base64_image(image_path):
 
 
 # =========================================================
-# HIGHLIGHT MEJA DALAM LAYOUT
+# HIGHLIGHT FUNCTIONS
+# HIGHLIGHT ONLY TABLE NUMBER BOXES FROM THE FILTERED GROUP
 # =========================================================
+def normalize_meja_value(value):
+    value = str(value).strip().upper()
+    if value.endswith(".0"):
+        value = value[:-2]
+    return value
+
+
 def generate_seat_map(img_w, img_h):
     seat_map = {}
 
-    # =========================================================
-    # MAIN HALL ROW POSITIONS (adjusted for the NEW image)
-    # These are CENTER Y positions as a ratio of image height
-    # =========================================================
-    row_y_ratio = {
-        "FL": 0.038,
-        "FR": 0.129,
-        "EL": 0.206,
-        "ER": 0.297,
-        "DL": 0.374,
-        "DR": 0.465,
-        "CL": 0.545,
-        "CR": 0.636,
-        "BL": 0.713,
-        "BR": 0.804,
-        "AL": 0.881,
-        "AR": 0.972,
-    }
-
-    # =========================================================
-    # X positions for 20 seats across the hall
-    # LEFT -> RIGHT corresponds to 20 -> 1
-    # These are CENTER X positions as a ratio of image width
-    # =========================================================
-    x_ratio_positions = [
-        0.091, 0.129, 0.167, 0.205, 0.243,
-        0.281, 0.319, 0.357, 0.395, 0.433,
-        0.471, 0.509, 0.547, 0.585, 0.623,
-        0.661, 0.699, 0.737, 0.775, 0.813
-    ]
-
-    # Box size for normal hall seat labels
-    seat_w = int(img_w * 0.035)
-    seat_h = int(img_h * 0.034)
-
-    # Generate seat boxes for all hall rows
-    for prefix, y_ratio in row_y_ratio.items():
-        y = int(img_h * y_ratio)
-
-        for seat_no, x_ratio in zip(range(20, 0, -1), x_ratio_positions):
-            x = int(img_w * x_ratio)
-            seat_id = f"{prefix}{seat_no}"
-
-            seat_map[seat_id] = {
-                "x": x,
-                "y": y,
-                "w": seat_w,
-                "h": seat_h
-            }
-
-    # =========================================================
-    # RIGHT SIDE / VIP NUMBER BOXES
-    # Adjusted for the NEW image
-    # =========================================================
-    vip_x_ratio = 0.936
-
+    # Right-side numbered boxes based on the new image
+    # These are approximate CENTER positions using image ratio
     right_side_ratio_positions = {
-        "13": 0.123,
-        "11": 0.181,
-        "9": 0.239,
-        "7": 0.297,
-        "5": 0.355,
-        "3": 0.413,
-        "1": 0.471,
-        "2": 0.529,
-        "4": 0.587,
-        "6": 0.645,
-        "8": 0.703,
-        "10": 0.761,
-        "12": 0.819,
-        "14": 0.877,
+        "13": (0.951, 0.151),
+        "11": (0.951, 0.208),
+        "9":  (0.951, 0.265),
+        "7":  (0.951, 0.322),
+        "5":  (0.951, 0.379),
+        "3":  (0.951, 0.436),
+        "1":  (0.951, 0.493),
+        "2":  (0.951, 0.550),
+        "4":  (0.951, 0.607),
+        "6":  (0.951, 0.664),
+        "8":  (0.951, 0.721),
+        "10": (0.951, 0.778),
+        "12": (0.951, 0.835),
+        "14": (0.951, 0.892),
     }
 
-    vip_w = int(img_w * 0.025)
-    vip_h = int(img_h * 0.036)
+    box_w = int(img_w * 0.024)
+    box_h = int(img_h * 0.040)
 
-    for meja, y_ratio in right_side_ratio_positions.items():
+    for meja, (x_ratio, y_ratio) in right_side_ratio_positions.items():
         seat_map[meja] = {
-            "x": int(img_w * vip_x_ratio),
+            "x": int(img_w * x_ratio),
             "y": int(img_h * y_ratio),
-            "w": vip_w,
-            "h": vip_h
+            "w": box_w,
+            "h": box_h
         }
 
     return seat_map
@@ -375,15 +302,13 @@ def generate_highlighted_layout(group_df):
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
-    # IMPORTANT: pass image size into seat map generator
     seat_map = generate_seat_map(img_w, img_h)
 
     meja_list = (
         group_df["MEJA"]
         .dropna()
         .astype(str)
-        .str.strip()
-        .str.upper()
+        .apply(normalize_meja_value)
         .unique()
     )
 
@@ -409,7 +334,6 @@ def generate_highlighted_layout(group_df):
 
     highlighted = Image.alpha_composite(image, overlay)
 
-    # Save in memory
     img_byte_arr = io.BytesIO()
     highlighted.convert("RGB").save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
@@ -446,20 +370,14 @@ if st.session_state.host_logged_in:
                     f"CSV baru tidak lengkap. Kolum tiada: {missing_uploaded_cols}"
                 )
             else:
-                # Simpan CSV baru sebagai data utama untuk semua user
                 new_df.to_csv(DATA_FILE, index=False, encoding="utf-8")
-
-                # Reset kehadiran bila data baru upload
                 reset_attendance()
-
-                # Clear cache supaya data lama tidak digunakan
                 st.cache_data.clear()
 
                 st.sidebar.success(
                     "CSV baru berjaya dimuat naik. "
                     "Data tetamu telah dikemaskini dan rekod kehadiran telah direset."
                 )
-
                 st.rerun()
 
         except Exception as e:
@@ -488,7 +406,6 @@ else:
 
 # =========================================================
 # LOAD DATA
-# Semua user akan baca DATA_FILE utama, bukan session host
 # =========================================================
 df = load_default_data(get_file_mtime(DATA_FILE))
 attendance_df = load_attendance()
@@ -515,18 +432,18 @@ if img_base64:
         padding: 15px;
         border-radius: 15px;
         margin-bottom: 15px;
-        margin-top: 30px; /* Adjust this value to move the banner down */
+        margin-top: 30px;
     ">
         <img src="data:image/png;base64,{img_base64}" width="60">
         <h2 style="
             margin: 0;
-            color: #e0f2f1; 
+            color: #e0f2f1;
             font-family: 'Arial', sans-serif;
             font-weight: bold;
             font-size: 22px;
         ">
-            Majlis Makan Malam 
-            Rejimental Penghargaan 
+            Majlis Makan Malam
+            Rejimental Penghargaan
             Brigedier Jeneral Dato' Zamzuri bin Harun
         </h2>
     </div>
@@ -541,7 +458,7 @@ else:
         padding: 15px;
         border-radius: 15px;
         margin-bottom: 15px;
-         margin-top: 30px; /* Adjust this value to move the banner down */
+        margin-top: 30px;
     ">
         <h2 style="
             margin: 0;
@@ -550,8 +467,8 @@ else:
             font-weight: bold;
             font-size: 22px;
         ">
-            Majlis Makan Malam 
-            Rejimental Penghargaan 
+            Majlis Makan Malam
+            Rejimental Penghargaan
             Brigedier Jeneral Dato' Zamzuri bin Harun
         </h2>
     </div>
@@ -568,7 +485,7 @@ st.markdown(
 
 search_no = st.text_input(
     "Nombor Tentera:",
-    max_chars=7,
+    max_chars=20,
     placeholder="Contoh: 3004463"
 )
 
@@ -585,30 +502,31 @@ if search_no:
         bil_value = str(result_df.iloc[0]["BIL"]).strip()
         group_df = df[df["BIL"].astype(str).str.strip() == bil_value].copy()
 
-        st.success(f"Rekod dijumpai")
+        st.success("Rekod dijumpai")
 
         st.markdown("### Maklumat Kehadiran")
 
         display_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
-
         if "CATATAN" in group_df.columns:
             display_cols.append("CATATAN")
 
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-    layout_base64, missing_meja = generate_highlighted_layout(group_df)
 
-    if layout_base64:
-        # Display the image in Streamlit
-        st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
+        # IMPORTANT: use group_df, NOT full df
+        layout_base64, missing_meja = generate_highlighted_layout(group_df)
 
-        # Display missing seats if any
-        if missing_meja:
-            st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
-    else:
-        st.error("Error generating the highlighted image.")
-        
+        if layout_base64:
+            st.image(f"data:image/png;base64,{layout_base64}", use_container_width=True)
+
+            if missing_meja:
+                st.warning(
+                    f"The following meja values are missing from the layout: {', '.join(missing_meja)}"
+                )
+        else:
+            st.error("Error generating the highlighted image.")
+
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
             unsafe_allow_html=True
@@ -616,9 +534,8 @@ if search_no:
 
         sudah_hadir_semua = True
 
-        for idx, row in group_df.iterrows():
+        for _, row in group_df.iterrows():
             noten = str(row["NOTEN"]).strip()
-
             sudah_hadir = False
 
             if not attendance_df.empty and "NOTEN" in attendance_df.columns:
@@ -635,14 +552,12 @@ if search_no:
         if st.session_state.host_logged_in:
             if not sudah_hadir_semua:
                 if st.button("Submit / Tandakan Kehadiran Kumpulan Ini"):
-
                     new_records = []
 
-                    for idx, row in group_df.iterrows():
+                    for _, row in group_df.iterrows():
                         noten = str(row["NOTEN"]).strip()
 
                         already_exists = False
-
                         if not attendance_df.empty and "NOTEN" in attendance_df.columns:
                             already_exists = noten in attendance_df["NOTEN"].astype(str).str.strip().values
 
