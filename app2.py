@@ -362,8 +362,9 @@ def generate_highlighted_layout(group_df):
 
     # Loop through the MEJA values in the CSV and highlight ONLY those corresponding seats
     for meja in meja_list:
-        if meja in seat_map:  # Check if the seat exists in the seating map
+        if meja in seat_map:
             info = seat_map[meja]
+
             x = info["x"]
             y = info["y"]
             w = info["w"]
@@ -377,7 +378,7 @@ def generate_highlighted_layout(group_df):
                 width=4
             )
         else:
-            missing_meja.append(meja)  # If the MEJA value is not found, track it as missing
+            missing_meja.append(meja)
 
     # Combine the overlay with the original image
     highlighted = Image.alpha_composite(image, overlay)
