@@ -18,6 +18,18 @@ if "host_logged_in" not in st.session_state:
 
 st.markdown("""
 <style>
+   .stTextInput {
+        font-size: 12px; /* Reduce font size of the input */
+    }
+
+    .stMarkdown h1, .stMarkdown h2 {
+        font-size: 18px; /* Adjust heading size */
+    }
+
+    .stMarkdown p {
+        font-size: 14px; /* Adjust body text size */
+    }
+     
 .block-container {
     padding-top: 1rem;
     padding-bottom: 2rem;
