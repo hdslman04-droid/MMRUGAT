@@ -576,20 +576,17 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-        layout_base64, missing_meja = generate_highlighted_layout(group_df, CENTER_IMAGE)
-        if layout_base64:
-            st.markdown(f"""
-            <div style="text-align: center;">
-                <img src="data:image/png;base64,{layout_base64}" style="max-width: 100%; height: auto; border-radius: 10px;">
-            </div>
-            """, unsafe_allow_html=True)
+              layout_base64, missing_meja = generate_highlighted_layout(df)
 
+        if layout_base64:
+            # Display the image in Streamlit
+            st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
+
+            # Display missing seats if any
             if missing_meja:
-                st.warning(
-                    f"Meja berikut tidak dapat dipaparkan dalam pelan kedudukan kerana tiada dalam template: {missing_meja}"
-                )
+                st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
         else:
-            st.error("Gambar pelan kedudukan tidak dijumpai.")
+            st.error("Error generating the highlighted image.")
     
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
