@@ -273,67 +273,131 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
-import pandas as pd
-from PIL import Image, ImageDraw
-import io
+def generate_seat_map():
+    seat_map = {}
 
-# Read the CSV data
-def load_seating_plan(file_path):
-    df = pd.read_csv(file_path, encoding="utf-8-sig")  # or use 'ISO-8859-1' if that doesn't work
-    return df
-
-# Function to highlight seats on the image
-def highlight_seats_on_image(image_path, seat_data, seat_positions):
-    # Open the seating plan image
-    img = Image.open(image_path)
-    draw = ImageDraw.Draw(img)
-    
-    # Loop through the seat data to highlight the correct seats
-    for _, row in seat_data.iterrows():
-        seat_number = row["MEJA"]
-        if seat_number in seat_positions:
-            # Get the coordinates of the seat
-            x, y, width, height = seat_positions[seat_number]
-            
-            # Draw a rectangle around the seat
-            draw.rectangle([x, y, x + width, y + height], outline="red", width=3)
-    
-    return img
-
-# Example function for extracting seat positions (adjust as per your layout)
-def get_seat_positions():
-    # Manually define seat positions on the image (x, y, width, height)
-    seat_positions = {
-        "FL1": (50, 50, 60, 60),
-        "FR1": (150, 50, 60, 60),
-        "FL2": (50, 150, 60, 60),
-        "FR2": (150, 150, 60, 60),
-        # Add all other seats as needed...
+    row_y = {
+        "FL": 28,
+        "FR": 84,
+        "EL": 112,
+        "ER": 168,
+        "DL": 196,
+        "DR": 252,
+        "CL": 308,
+        "CR": 364,
+        "BL": 392,
+        "BR": 448,
+        "AL": 476,
+        "AR": 532,
     }
-    return seat_positions
 
-# Main function to highlight seats based on CSV and save the modified image
-def main():
-    # Paths for the CSV file and the image
-    csv_file_path = "/mnt/data/SEATING PLAN MMR PENGHARGAAN 2026 2(1).csv"
-    image_file_path = "/mnt/data/GAMBAR BARU 3(9).png"
+    start_x = 70
+    gap_x = 50
 
-    # Load the CSV data
-    seating_data = load_seating_plan(csv_file_path)
+    # Generate seat positions for each row
+    for prefix, y in row_y.items():
+        for seat_no in range(20, 0, -1):
+            x = start_x + (20 - seat_no) * gap_x
+            seat_id = f"{prefix}{seat_no}"
 
-    # Get the predefined seat positions (you can modify this based on the actual layout)
-    seat_positions = get_seat_positions()
+            seat_map[seat_id] = {
+                "x": x,
+                "y": y,
+                "w": 30,
+                "h": 18
+            }
 
-    # Highlight the seats on the image
-    highlighted_img = highlight_seats_on_image(image_file_path, seating_data, seat_positions)
+    # Right-side specific seat positions
+    right_side_positions = {
+        "18": (1155, 42),
+        "16": (1155, 70),
+        "14": (1155, 98),
+        "12": (1155, 126),
+        "10": (1155, 154),
+        "8": (1155, 182),
+        "6": (1155, 210),
+        "4": (1155, 238),
+        "2": (1155, 266),
+        "1": (1155, 294),
+        "3": (1155, 322),
+        "5": (1155, 350),
+        "7": (1155, 378),
+        "9": (1155, 406),
+        "11": (1155, 434),
+        "13": (1155, 462),
+        "15": (1155, 490),
+        "17": (1155, 518),
+    }
 
-    # Save or display the image
-    highlighted_img.show()  # Show the image
-    highlighted_img.save("/mnt/data/highlighted_seating_plan.png")  # Save the modified image
+    for meja, (x, y) in right_side_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 24,
+            "h": 18
+        }
 
-# Run the main function
-if __name__ == "__main__":
-    main()
+    return seat_map
+
+# Function to generate highlighted layout based on the group data
+def generate_highlighted_layout(group_df):
+    # Path to the base seating layout image
+    path = Path("path_to_your_image.png")
+
+    if not path.exists():
+        return "", []
+
+    image = Image.open(path).convert("RGBA")
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    # Get the seat map
+    seat_map = generate_seat_map()
+
+    # Extract seat IDs from the dataframe
+    meja_list = (
+        group_df["MEJA"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .unique()
+    )
+
+    missing_meja = []
+
+    # Loop through the seat data and highlight the seats
+    for meja in meja_list:
+        if meja in seat_map:
+            info = seat_map[meja]
+
+            x = info["x"]
+            y = info["y"]
+            w = info["w"]
+            h = info["h"]
+
+            # Draw a semi-transparent red rectangle around the seat
+            draw.rectangle(
+                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
+                fill=(255, 0, 0, 90),  # Transparent red
+                outline=(255, 0, 0, 255),  # Solid red border
+                width=4
+            )
+        else:
+            missing_meja.append(meja)
+
+    # Combine the overlay with the original image
+    highlighted = Image.alpha_composite(image, overlay)
+
+    # Save the image in memory using BytesIO
+    img_byte_arr = io.BytesIO()
+    highlighted.convert("RGB").save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)  # Reset the pointer to the start of the BytesIO object
+
+    # Convert image to base64 for embedding in HTML or Streamlit
+    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
+
+    return layout_base64, missing_meja
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
