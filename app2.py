@@ -485,6 +485,7 @@ if img_base64:
         padding: 15px;
         border-radius: 15px;
         margin-bottom: 15px;
+        margin-top: 30px; /* Adjust this value to move the banner down */
     ">
         <img src="data:image/png;base64,{img_base64}" width="50">
         <h2 style="
@@ -510,6 +511,7 @@ else:
         padding: 15px;
         border-radius: 15px;
         margin-bottom: 15px;
+         margin-top: 30px; /* Adjust this value to move the banner down */
     ">
         <h2 style="
             margin: 0;
