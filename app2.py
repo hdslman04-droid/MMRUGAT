@@ -340,9 +340,10 @@ def generate_seat_map():
     return seat_map
 
 # Function to generate highlighted layout based on the group data (seats about to be occupied)
-def generate_highlighted_layout(group_df, image_file):
-    # Open the uploaded image (using Streamlit's file uploader)
-    image = Image.open(image_file).convert("RGBA")
+def generate_highlighted_layout(group_df):
+    # Load the seating plan image
+    path = "GAMBAR BARU 3.png"  # This is your image path (no need to upload image)
+    image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
@@ -393,6 +394,7 @@ def generate_highlighted_layout(group_df, image_file):
     layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
 
     return layout_base64, missing_meja
+
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
@@ -571,19 +573,17 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
- # Generate the highlighted seating layout
-        layout_base64, missing_meja = generate_highlighted_layout(df, image_file)
+    layout_base64, missing_meja = generate_highlighted_layout(df)
 
-        if layout_base64:
-            # Display the image in Streamlit
-            st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
+    if layout_base64:
+        # Display the image in Streamlit
+        st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
 
-            # Display missing seats if any
-            if missing_meja:
-                st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
-        else:
-            st.error("Error generating the highlighted image.")
-    
+        # Display missing seats if any
+        if missing_meja:
+            st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
+    else:
+        st.error("Error generating the highlighted image.")
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
             unsafe_allow_html=True
