@@ -742,6 +742,7 @@ if st.session_state.host_logged_in:
         st.dataframe(attendance_df, use_container_width=True)
 
     st.markdown("### ❌ Belum Hadir")
+    st.markdown("### ❌ Sila ke kaunter pendaftaran untuk mengesahkan kehadiran")
 
     if belum_hadir_df.empty:
         st.success("Semua telah hadir.")
