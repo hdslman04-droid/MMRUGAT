@@ -571,8 +571,6 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-        layout_base64, missing_meja = generate_highlighted_layout(df)
-
  # Generate the highlighted seating layout
         layout_base64, missing_meja = generate_highlighted_layout(df, image_file)
 
