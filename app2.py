@@ -272,9 +272,10 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
-def generate_seat_map():
-    seat_map = {}
+from PIL import Image, ImageDraw
+from pathlib import Path
 
+def generate_seat_map():
     # Coordinates for highlighting seats (X, Y, Width, Height)
     highlight_coordinates_new = {
         1: (80, 120, 50, 30),
@@ -306,7 +307,7 @@ def show_highlighted_layout(image_path):
     path = Path(image_path)
 
     if not path.exists():
-        st.warning(f"Fail gambar '{image_path}' tidak dijumpai.")
+        print(f"Error: Image file '{image_path}' not found.")
         return
 
     image = Image.open(path).convert("RGBA")
@@ -327,7 +328,11 @@ def show_highlighted_layout(image_path):
     highlighted_image = Image.alpha_composite(image, overlay)
 
     # Show the final image with highlights
-    st.image(highlighted_image, use_container_width=True)
+    highlighted_image.show()
+
+# Example usage
+image_path = "path_to_your_image.png"  # Replace with your image file path
+show_highlighted_layout(image_path)
 
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
