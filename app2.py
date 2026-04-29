@@ -337,12 +337,12 @@ def generate_seat_map():
 
     # Adjusted positions for the red box (BRASS BAND & LIVE BAND section)
     red_box_positions = {
-        "CL": (140, 410),
-        "CR": (1160, 410),
-        "BL": (140, 490),
-        "BR": (1160, 490),
-        "AL": (140, 570),
-        "AR": (1160, 570),
+        "CL": (140, 420),
+        "CR": (1160, 420),
+        "BL": (140, 500),
+        "BR": (1160, 500),
+        "AL": (140, 580),
+        "AR": (1160, 580),
     }
 
     # Adjust size to match the full section
@@ -351,7 +351,7 @@ def generate_seat_map():
 
     seat_map["RED_BOX"] = {
         "x": 140,  # X position of the red box (left side)
-        "y": 410,  # Y position of the red box (middle row)
+        "y": 420,  # Y position of the red box (middle row)
         "w": red_box_width,
         "h": red_box_height
     }
