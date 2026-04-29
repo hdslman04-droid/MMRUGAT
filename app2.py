@@ -273,7 +273,7 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
-def generate_seat_map():
+def generate_seat_map_corrected():
     seat_map = {}
 
     # Y coordinate for each row (adjusted based on the image layout)
@@ -335,9 +335,29 @@ def generate_seat_map():
             "h": 12
         }
 
+    # Adjusted red box for "BRASS BAND & LIVE BAND" section, coordinates based on image size
+    # Corrected red box coordinates based on provided seating area in the image
+    red_box_positions = {
+        "CL": (140, 410),
+        "CR": (1160, 410),
+        "BL": (140, 490),
+        "BR": (1160, 490),
+        "AL": (140, 570),
+        "AR": (1160, 570),
+    }
+
+    for meja, (x, y) in red_box_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 16,
+            "h": 12
+        }
+
     return seat_map
 
-def generate_highlighted_layout(group_df, image_path):
+
+def generate_highlighted_layout_corrected(group_df, image_path):
     path = Path(image_path)
 
     if not path.exists():
@@ -347,7 +367,7 @@ def generate_highlighted_layout(group_df, image_path):
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
-    seat_map = generate_seat_map()
+    seat_map = generate_seat_map_corrected()
 
     meja_list = (
         group_df["MEJA"]
@@ -369,7 +389,6 @@ def generate_highlighted_layout(group_df, image_path):
             w = info["w"]
             h = info["h"]
 
-            # Draw the rectangle for each highlighted seat
             draw.rectangle(
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
                 fill=(255, 0, 0, 90),  # Semi-transparent red fill
@@ -379,7 +398,6 @@ def generate_highlighted_layout(group_df, image_path):
         else:
             missing_meja.append(meja)
 
-    # Combine the overlay with the original image
     highlighted_image = Image.alpha_composite(image, overlay)
 
     # Convert to base64 for embedding in HTML (optional)
