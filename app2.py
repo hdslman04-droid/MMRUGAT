@@ -476,7 +476,7 @@ if img_base64:
     ">
         <img src="data:image/png;base64,{img_base64}" width="50">
         <h2 style="margin:0; color:white;">
-            Sistem Kehadiran Majlis Makan Malam Regimental KPA (GAJI)
+            Majlis Makan Malam Rejimental Penghargaan Brigedier Jeneral Dato' Zamzuri bin Harun
         </h2>
     </div>
     """, unsafe_allow_html=True)
