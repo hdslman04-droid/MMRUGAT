@@ -294,7 +294,6 @@ def generate_seat_map():
     start_x = 70
     gap_x = 50
 
-    # Generate seat positions for each row
     for prefix, y in row_y.items():
         for seat_no in range(20, 0, -1):
             x = start_x + (20 - seat_no) * gap_x
@@ -340,7 +339,7 @@ def generate_seat_map():
 
 # Function to generate highlighted layout based on the MEJA data from the CSV
 def generate_highlighted_layout(group_df):
-    # Load the seating plan image
+    # Load the seating plan image (pre-existing image file)
     path = "GAMBAR BARU 3.png"  # This is your image path (no need to upload image)
     image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
@@ -361,11 +360,10 @@ def generate_highlighted_layout(group_df):
 
     missing_meja = []
 
-    # Loop through the seat data and highlight the seats
+    # Loop through the MEJA values in the CSV and highlight ONLY those corresponding seats
     for meja in meja_list:
-        if meja in seat_map:
+        if meja in seat_map:  # Check if the seat exists in the seating map
             info = seat_map[meja]
-
             x = info["x"]
             y = info["y"]
             w = info["w"]
@@ -379,7 +377,7 @@ def generate_highlighted_layout(group_df):
                 width=4
             )
         else:
-            missing_meja.append(meja)
+            missing_meja.append(meja)  # If the MEJA value is not found, track it as missing
 
     # Combine the overlay with the original image
     highlighted = Image.alpha_composite(image, overlay)
