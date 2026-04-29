@@ -430,7 +430,7 @@ if st.session_state.host_logged_in:
                     "Data tetamu telah dikemaskini dan rekod kehadiran telah direset."
                 )
 
-               st.experimental_rerun()
+               st.rerun()
 
         except Exception as e:
             st.sidebar.error(f"Fail tidak dapat dibaca: {e}")
