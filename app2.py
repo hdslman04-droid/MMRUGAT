@@ -272,72 +272,77 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
-from PIL import Image, ImageDraw
-from pathlib import Path
+# Define the function to generate the highlighted layout
+def generate_highlighted_layout(group_df):
+    # Replace this with the path to your actual image
+    path = Path("/mnt/data/GAMBAR BARU 3.png")  # Example image path
 
-def generate_seat_map():
-    # Coordinates for highlighting seats (X, Y, Width, Height)
-    highlight_coordinates_new = {
-        1: (80, 120, 50, 30),
-        2: (150, 120, 50, 30),
-        3: (220, 120, 50, 30),
-        4: (290, 120, 50, 30),
-        5: (360, 120, 50, 30),
-        6: (430, 120, 50, 30),
-        7: (500, 120, 50, 30),
-        8: (570, 120, 50, 30),
-        9: (640, 120, 50, 30),
-        10: (710, 120, 50, 30),
-        11: (780, 120, 50, 30),
-        12: (850, 120, 50, 30),
-        13: (920, 120, 50, 30),
-        14: (990, 120, 50, 30),
-        15: (1060, 120, 50, 30),
-        16: (1130, 120, 50, 30),
-        17: (1200, 120, 50, 30),
-        18: (1270, 120, 50, 30),
-        19: (1340, 120, 50, 30),
-        20: (1410, 120, 50, 30)
-    }
-
-    return highlight_coordinates_new
-
-
-def show_highlighted_layout(image_path):
-    path = Path(image_path)
-
-    # Check if the image path is valid
+    # Check if the image exists
     if not path.exists():
-        print(f"Error: Image file '{image_path}' not found.")
-        return
+        return "", []  # Return an empty string and missing meja list if the image is not found
 
     # Open the image and prepare for drawing
     image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
+    # Generate seat map with coordinates
     seat_map = generate_seat_map()
 
-    # Iterate through seat numbers and highlight them
-    for seat_number, (x, y, w, h) in seat_map.items():
-        fill_color = (255, 0, 0, 90)  # Semi-transparent red fill
-        outline_color = (255, 0, 0, 255)  # Solid red outline
+    # Extract unique MEJA values from group_df and process them
+    meja_list = (
+        group_df["MEJA"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .unique()
+    )
 
-        # Draw the rectangle for each seat
-        draw.rectangle([x, y, x + w, y + h], fill=fill_color, outline=outline_color, width=4)
+    # List to store any missing MEJA
+    missing_meja = []
+
+    # Iterate through each MEJA and highlight on the image
+    for meja in meja_list:
+        if meja in seat_map:
+            info = seat_map[meja]
+
+            x = info["x"]
+            y = info["y"]
+            w = info["w"]
+            h = info["h"]
+
+            # Draw the rectangle for each seat
+            draw.rectangle(
+                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
+                fill=(255, 0, 0, 90),  # Semi-transparent red fill
+                outline=(255, 0, 0, 255),  # Solid red outline
+                width=4
+            )
+        else:
+            missing_meja.append(meja)
 
     # Combine the overlay with the original image
-    highlighted_image = Image.alpha_composite(image, overlay)
+    highlighted = Image.alpha_composite(image, overlay)
 
-    # Save and show the final image with highlights
-    highlighted_image.show()
-    # Optionally, save the image with highlights
-    highlighted_image.save("highlighted_seat_map.png")
+    # Convert the highlighted image to base64 for embedding
+    img_byte_arr = highlighted.convert("RGB")  # Convert to RGB before saving as PNG
+    img_byte_arr.save("/mnt/data/highlighted_seat_map.png", format="PNG")
 
+    # Return the path of the final image and missing meja
+    return "/mnt/data/highlighted_seat_map.png", missing_meja
 
-# Replace with the actual path to your image
-image_path = "/mnt/data/GAMBAR BARU 3(5).png"  # Example image path
-show_highlighted_layout(image_path)
+# Example usage
+group_df = {
+    'MEJA': ['1', '2', '3', '4', '5']  # Example data, replace with your actual group_df
+}
+
+# Run the function
+layout_image_path, missing_meja = generate_highlighted_layout(group_df)
+
+# Output the image path and any missing seats
+print(f"Highlighted layout saved at: {layout_image_path}")
+print(f"Missing seats: {missing_meja}")
 
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
