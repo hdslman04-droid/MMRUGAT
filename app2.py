@@ -275,63 +275,67 @@ def get_base64_image(image_path):
 def generate_seat_map():
     seat_map = {}
 
+    # Y coordinate baru berdasarkan gambar layout terbaru
     row_y = {
-        "FL": 28,
-        "FR": 84,
-        "EL": 112,
-        "ER": 168,
-        "DL": 196,
-        "DR": 252,
-        "CL": 308,
-        "CR": 364,
-        "BL": 392,
-        "BR": 448,
-        "AL": 476,
-        "AR": 532,
+        "FL": 139,
+        "FR": 186,
+        "EL": 210,
+        "ER": 258,
+        "DL": 281,
+        "DR": 328,
+        "CL": 376,
+        "CR": 423,
+        "BL": 446,
+        "BR": 494,
+        "AL": 518,
+        "AR": 565,
     }
 
-    start_x = 70
-    gap_x = 50
+    # X coordinate baru untuk seat 20 -> 1
+    x_positions = [
+        185, 230, 275, 321, 366,
+        412, 457, 502, 548, 593,
+        638, 684, 729, 775, 820,
+        865, 911, 956, 1002, 1047
+    ]
 
+    # Seat utama
     for prefix, y in row_y.items():
-        for seat_no in range(20, 0, -1):
-            x = start_x + (20 - seat_no) * gap_x
+        for idx, seat_no in enumerate(range(20, 0, -1)):
             seat_id = f"{prefix}{seat_no}"
+            x = x_positions[idx]
 
             seat_map[seat_id] = {
                 "x": x,
                 "y": y,
-                "w": 30,
-                "h": 18
+                "w": 22,
+                "h": 12
             }
 
+    # Seat sebelah kanan ikut gambar baru
     right_side_positions = {
-        "18": (1155, 42),
-        "16": (1155, 70),
-        "14": (1155, 98),
-        "12": (1155, 126),
-        "10": (1155, 154),
-        "8": (1155, 182),
-        "6": (1155, 210),
-        "4": (1155, 238),
-        "2": (1155, 266),
-        "1": (1155, 294),
-        "3": (1155, 322),
-        "5": (1155, 350),
-        "7": (1155, 378),
-        "9": (1155, 406),
-        "11": (1155, 434),
-        "13": (1155, 462),
-        "15": (1155, 490),
-        "17": (1155, 518),
+        "13": (1160, 197),
+        "11": (1160, 222),
+        "9":  (1160, 245),
+        "7":  (1160, 269),
+        "5":  (1160, 292),
+        "3":  (1160, 316),
+        "1":  (1160, 339),
+        "2":  (1160, 363),
+        "4":  (1160, 387),
+        "6":  (1160, 410),
+        "8":  (1160, 434),
+        "10": (1160, 457),
+        "12": (1160, 482),
+        "14": (1160, 505),
     }
 
     for meja, (x, y) in right_side_positions.items():
         seat_map[meja] = {
             "x": x,
             "y": y,
-            "w": 24,
-            "h": 18
+            "w": 16,
+            "h": 12
         }
 
     return seat_map
