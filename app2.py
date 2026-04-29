@@ -273,10 +273,14 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
+from PIL import Image, ImageDraw
+import pandas as pd
+
+# Example function to generate seat map with coordinates and seat numbers
 def generate_seat_map():
     seat_map = {}
-
-    # Y coordinate for each row (adjusted based on the image layout)
+    
+    # Row Y coordinates
     row_y = {
         "FL": 120,
         "FR": 160,
@@ -292,11 +296,9 @@ def generate_seat_map():
         "AR": 560,
     }
 
-    # Starting X position for seats and gap between each seat
+    # X coordinates for seats (1 -> 20)
     start_x = 70
     gap_x = 50
-
-    # Create seat map for each prefix (FL, FR, etc.) and seat number (1 -> 20)
     for prefix, y in row_y.items():
         for idx, seat_no in enumerate(range(20, 0, -1)):
             seat_id = f"{prefix}{seat_no}"
@@ -307,68 +309,23 @@ def generate_seat_map():
                 "w": 22,
                 "h": 12
             }
-
-    # Right side seats with fixed coordinates
-    right_side_positions = {
-        "13": (1160, 200),
-        "11": (1160, 220),
-        "9":  (1160, 240),
-        "7":  (1160, 260),
-        "5":  (1160, 280),
-        "3":  (1160, 300),
-        "1":  (1160, 320),
-        "2":  (1160, 340),
-        "4":  (1160, 360),
-        "6":  (1160, 380),
-        "8":  (1160, 400),
-        "10": (1160, 420),
-        "12": (1160, 440),
-        "14": (1160, 460),
-    }
-
-    # Add right-side positions to seat map
-    for meja, (x, y) in right_side_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 16,
-            "h": 12
-        }
-
-    # Adjusted red box for "BRASS BAND & LIVE BAND" section, coordinates based on image size
-    # Corrected red box coordinates based on provided seating area in the image
-    red_box_positions = {
-        "CL": (140, 410),
-        "CR": (1160, 410),
-        "BL": (140, 490),
-        "BR": (1160, 490),
-        "AL": (140, 570),
-        "AR": (1160, 570),
-    }
-
-    for meja, (x, y) in red_box_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 16,
-            "h": 12
-        }
-
+    
     return seat_map
 
 
-def generate_highlighted_layout(group_df, image_path):
-    path = Path(image_path)
+# Function to overlay seat highlights based on assigned seats (from CSV or data)
+def show_highlighted_seats(image_path, group_df):
+    path = image_path
 
-    if not path.exists():
-        return "", []
-
+    # Load image and prepare to draw
     image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
+    # Generate seat map with coordinates
     seat_map = generate_seat_map()
 
+    # Extract list of MEJA (seats) from group_df (replace with your actual data)
     meja_list = (
         group_df["MEJA"]
         .dropna()
@@ -383,12 +340,12 @@ def generate_highlighted_layout(group_df, image_path):
     for meja in meja_list:
         if meja in seat_map:
             info = seat_map[meja]
-
             x = info["x"]
             y = info["y"]
             w = info["w"]
             h = info["h"]
 
+            # Draw a rectangle for each highlighted seat
             draw.rectangle(
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
                 fill=(255, 0, 0, 90),  # Semi-transparent red fill
@@ -398,15 +355,28 @@ def generate_highlighted_layout(group_df, image_path):
         else:
             missing_meja.append(meja)
 
+    # Combine overlay with the image
     highlighted_image = Image.alpha_composite(image, overlay)
 
-    # Convert to base64 for embedding in HTML (optional)
-    img_byte_arr = io.BytesIO()
-    highlighted_image.save(img_byte_arr, format="PNG")
-    img_byte_arr.seek(0)
-    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
+    # Show the image with highlighted seats
+    highlighted_image.show()
 
-    return layout_base64, missing_meja
+    # Print missing seats if any
+    if missing_meja:
+        print(f"Missing MEJA: {', '.join(missing_meja)}")
+
+
+# Sample group_df (replace with actual data from your CSV)
+data = {
+    'MEJA': ['DL11', 'DL12', 'FR3', 'DR6']  # Example data
+}
+group_df = pd.DataFrame(data)
+
+# Provide the path to your layout image
+image_path = "/mnt/data/77a73a7b-f9cf-45da-a0c7-2bbc67fb4395.png"  # Replace with actual image path
+
+# Call the function to highlight the seats
+show_highlighted_seats(image_path, group_df)
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
