@@ -279,7 +279,7 @@ import io
 
 # Read the CSV data
 def load_seating_plan(file_path):
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, encoding="utf-8-sig")  # or use 'ISO-8859-1' if that doesn't work
     return df
 
 # Function to highlight seats on the image
