@@ -335,21 +335,6 @@ def generate_seat_map():
             "h": 12
         }
 
-    # Corrected positions for the red box (highlighting DL11 and DL12 only)
-    red_box_positions = {
-        "DL11": (500, 280),  # X, Y for DL11
-        "DL12": (540, 280),  # X, Y for DL12
-    }
-
-    # Adjust the size of the red box to cover both DL11 and DL12 properly
-    for meja, (x, y) in red_box_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 50,  # Wider width to cover both DL11 and DL12
-            "h": 20   # Height to fit properly around the seats
-        }
-
     return seat_map
 
 
@@ -397,14 +382,6 @@ def show_highlighted_layout(image_path, group_df):
             )
         else:
             missing_meja.append(meja)
-
-    # Highlight the red box section for DL11 and DL12 only
-    red_box = seat_map.get("DL11")  # Since both DL11 and DL12 are part of the same red box
-    if red_box:
-        x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
-        red_fill = (255, 0, 0, 90)
-        red_outline = (255, 0, 0, 255)
-        draw.rectangle([x, y, x + w, y + h], fill=red_fill, outline=red_outline, width=4)
 
     highlighted_image = Image.alpha_composite(image, overlay)
     st.image(highlighted_image, use_container_width=True)
