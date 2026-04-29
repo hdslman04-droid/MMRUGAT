@@ -5,6 +5,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
 from PIL import Image, ImageDraw
+import io
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
@@ -272,7 +273,150 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
+def generate_seat_map(img_w, img_h):
+    seat_map = {}
 
+    # =========================================================
+    # MAIN HALL ROW POSITIONS (adjusted for the NEW image)
+    # These are CENTER Y positions as a ratio of image height
+    # =========================================================
+    row_y_ratio = {
+        "FL": 0.038,
+        "FR": 0.129,
+        "EL": 0.206,
+        "ER": 0.297,
+        "DL": 0.374,
+        "DR": 0.465,
+        "CL": 0.545,
+        "CR": 0.636,
+        "BL": 0.713,
+        "BR": 0.804,
+        "AL": 0.881,
+        "AR": 0.972,
+    }
+
+    # =========================================================
+    # X positions for 20 seats across the hall
+    # LEFT -> RIGHT corresponds to 20 -> 1
+    # These are CENTER X positions as a ratio of image width
+    # =========================================================
+    x_ratio_positions = [
+        0.091, 0.129, 0.167, 0.205, 0.243,
+        0.281, 0.319, 0.357, 0.395, 0.433,
+        0.471, 0.509, 0.547, 0.585, 0.623,
+        0.661, 0.699, 0.737, 0.775, 0.813
+    ]
+
+    # Box size for normal hall seat labels
+    seat_w = int(img_w * 0.035)
+    seat_h = int(img_h * 0.034)
+
+    # Generate seat boxes for all hall rows
+    for prefix, y_ratio in row_y_ratio.items():
+        y = int(img_h * y_ratio)
+
+        for seat_no, x_ratio in zip(range(20, 0, -1), x_ratio_positions):
+            x = int(img_w * x_ratio)
+            seat_id = f"{prefix}{seat_no}"
+
+            seat_map[seat_id] = {
+                "x": x,
+                "y": y,
+                "w": seat_w,
+                "h": seat_h
+            }
+
+    # =========================================================
+    # RIGHT SIDE / VIP NUMBER BOXES
+    # Adjusted for the NEW image
+    # =========================================================
+    vip_x_ratio = 0.936
+
+    right_side_ratio_positions = {
+        "13": 0.123,
+        "11": 0.181,
+        "9": 0.239,
+        "7": 0.297,
+        "5": 0.355,
+        "3": 0.413,
+        "1": 0.471,
+        "2": 0.529,
+        "4": 0.587,
+        "6": 0.645,
+        "8": 0.703,
+        "10": 0.761,
+        "12": 0.819,
+        "14": 0.877,
+    }
+
+    vip_w = int(img_w * 0.025)
+    vip_h = int(img_h * 0.036)
+
+    for meja, y_ratio in right_side_ratio_positions.items():
+        seat_map[meja] = {
+            "x": int(img_w * vip_x_ratio),
+            "y": int(img_h * y_ratio),
+            "w": vip_w,
+            "h": vip_h
+        }
+
+    return seat_map
+
+
+def generate_highlighted_layout(group_df):
+    path = Path(CENTER_IMAGE)
+
+    if not path.exists():
+        return "", []
+
+    image = Image.open(path).convert("RGBA")
+    img_w, img_h = image.size
+
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    # IMPORTANT: pass image size into seat map generator
+    seat_map = generate_seat_map(img_w, img_h)
+
+    meja_list = (
+        group_df["MEJA"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .str.upper()
+        .unique()
+    )
+
+    missing_meja = []
+
+    for meja in meja_list:
+        if meja in seat_map:
+            info = seat_map[meja]
+
+            x = info["x"]
+            y = info["y"]
+            w = info["w"]
+            h = info["h"]
+
+            draw.rectangle(
+                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
+                fill=(255, 0, 0, 90),
+                outline=(255, 0, 0, 255),
+                width=4
+            )
+        else:
+            missing_meja.append(meja)
+
+    highlighted = Image.alpha_composite(image, overlay)
+
+    # Save in memory
+    img_byte_arr = io.BytesIO()
+    highlighted.convert("RGB").save(img_byte_arr, format="PNG")
+    img_byte_arr.seek(0)
+
+    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
+
+    return layout_base64, missing_meja
 
 
 # =========================================================
