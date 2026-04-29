@@ -494,7 +494,8 @@ if img_base64:
             font-weight: bold;
             font-size: 24px;
         ">
-            Majlis Makan Malam Rejimental Penghargaan 
+            Majlis Makan Malam 
+            Rejimental Penghargaan 
             Brigedier Jeneral Dato' Zamzuri bin Harun
         </h2>
     </div>
@@ -512,29 +513,14 @@ else:
     ">
         <h2 style="
             margin: 0;
-            color: #e0f2f1; 
+            color: white;
             font-family: 'Arial', sans-serif;
             font-weight: bold;
             font-size: 24px;
         ">
-            Majlis Makan Malam Rejimental Penghargaan 
+            Majlis Makan Malam 
+            Rejimental Penghargaan 
             Brigedier Jeneral Dato' Zamzuri bin Harun
-        </h2>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-    <div style="
-        display:flex;
-        align-items:center;
-        gap:12px;
-        background: linear-gradient(90deg, #020617, #111827);
-        padding:15px;
-        border-radius:15px;
-        margin-bottom:15px;
-    ">
-        <h2 style="margin:0; color:white;">
-            <h1>Majlis Makan Malam Rejimental Penghargaan Brigedier Jeneral Dato' Zamzuri bin Harun</h1>
         </h2>
     </div>
     """, unsafe_allow_html=True)
