@@ -335,26 +335,20 @@ def generate_seat_map():
             "h": 12
         }
 
-    # Adjusted positions for the red box (BRASS BAND & LIVE BAND section)
+    # Adjusted positions for the red box (for DL11 and DL12 only)
     red_box_positions = {
-        "CL": (140, 420),
-        "CR": (1160, 420),
-        "BL": (140, 500),
-        "BR": (1160, 500),
-        "AL": (140, 580),
-        "AR": (1160, 580),
+        "DL11": (500, 280),  # X, Y for DL11
+        "DL12": (540, 280),  # X, Y for DL12
     }
 
-    # Adjust size to match the full section (wider red box to cover more)
-    red_box_width = 1020  # Adjusted total width of the red box
-    red_box_height = 90  # Adjusted height to fully cover seat rows
-
-    seat_map["RED_BOX"] = {
-        "x": 140,  # X position of the red box (left side)
-        "y": 420,  # Y position of the red box (middle row)
-        "w": red_box_width,
-        "h": red_box_height
-    }
+    # Add the red box for DL11 and DL12 only
+    for meja, (x, y) in red_box_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 32,  # Adjust width to cover both seats
+            "h": 12   # Adjust height to fit the seats
+        }
 
     return seat_map
 
@@ -405,7 +399,7 @@ def show_highlighted_layout(image_path, group_df):
             missing_meja.append(meja)
 
     # Highlight the red box section
-    red_box = seat_map.get("RED_BOX")
+    red_box = seat_map.get("DL11")  # Since both DL11 and DL12 are part of the same red box
     if red_box:
         x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
         red_fill = (255, 0, 0, 90)
