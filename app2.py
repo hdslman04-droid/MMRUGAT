@@ -398,7 +398,7 @@ def show_highlighted_layout(image_path, group_df):
         else:
             missing_meja.append(meja)
 
-    # Highlight the red box section
+    # Highlight the red box section for DL11 and DL12
     red_box = seat_map.get("DL11")  # Since both DL11 and DL12 are part of the same red box
     if red_box:
         x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
@@ -411,7 +411,6 @@ def show_highlighted_layout(image_path, group_df):
 
     if missing_meja:
         st.warning(f"Meja ini belum ada coordinate dalam layout: {', '.join(missing_meja)}")
-
 
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
