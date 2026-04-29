@@ -487,13 +487,13 @@ if img_base64:
         margin-bottom: 15px;
         margin-top: 30px; /* Adjust this value to move the banner down */
     ">
-        <img src="data:image/png;base64,{img_base64}" width="50">
+        <img src="data:image/png;base64,{img_base64}" width="60">
         <h2 style="
             margin: 0;
             color: #e0f2f1; 
             font-family: 'Arial', sans-serif;
             font-weight: bold;
-            font-size: 24px;
+            font-size: 22px;
         ">
             Majlis Makan Malam 
             Rejimental Penghargaan 
@@ -518,7 +518,7 @@ else:
             color: white;
             font-family: 'Arial', sans-serif;
             font-weight: bold;
-            font-size: 24px;
+            font-size: 22px;
         ">
             Majlis Makan Malam 
             Rejimental Penghargaan 
