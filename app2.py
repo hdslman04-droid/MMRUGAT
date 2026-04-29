@@ -5,6 +5,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
 from PIL import Image, ImageDraw
+import io
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
@@ -275,75 +276,73 @@ def get_base64_image(image_path):
 def generate_seat_map():
     seat_map = {}
 
-    # Y coordinate based on the new image layout
     row_y = {
-        "FL": 120,
-        "FR": 160,
-        "EL": 200,
-        "ER": 240,
-        "DL": 280,
-        "DR": 320,
-        "CL": 360,
-        "CR": 400,
-        "BL": 440,
-        "BR": 480,
-        "AL": 520,
-        "AR": 560,
+        "FL": 28,
+        "FR": 84,
+        "EL": 112,
+        "ER": 168,
+        "DL": 196,
+        "DR": 252,
+        "CL": 308,
+        "CR": 364,
+        "BL": 392,
+        "BR": 448,
+        "AL": 476,
+        "AR": 532,
     }
 
-    # X coordinates for seats (1 -> 20)
-    x_positions = [
-        180, 220, 260, 300, 340, 380, 420, 460, 500, 540, 580, 620, 660, 700, 740, 780, 820, 860, 900, 940
-    ]
+    start_x = 70
+    gap_x = 50
 
-    # Main seats (FL, FR, etc.)
     for prefix, y in row_y.items():
-        for idx, seat_no in enumerate(range(20, 0, -1)):
+        for seat_no in range(20, 0, -1):
+            x = start_x + (20 - seat_no) * gap_x
             seat_id = f"{prefix}{seat_no}"
-            x = x_positions[idx]
 
             seat_map[seat_id] = {
                 "x": x,
                 "y": y,
-                "w": 22,
-                "h": 12
+                "w": 30,
+                "h": 18
             }
 
-    # Right side seats (1, 2, 3, etc.)
     right_side_positions = {
-        "13": (1160, 200),
-        "11": (1160, 220),
-        "9":  (1160, 240),
-        "7":  (1160, 260),
-        "5":  (1160, 280),
-        "3":  (1160, 300),
-        "1":  (1160, 320),
-        "2":  (1160, 340),
-        "4":  (1160, 360),
-        "6":  (1160, 380),
-        "8":  (1160, 400),
-        "10": (1160, 420),
-        "12": (1160, 440),
-        "14": (1160, 460),
+        "18": (1155, 42),
+        "16": (1155, 70),
+        "14": (1155, 98),
+        "12": (1155, 126),
+        "10": (1155, 154),
+        "8": (1155, 182),
+        "6": (1155, 210),
+        "4": (1155, 238),
+        "2": (1155, 266),
+        "1": (1155, 294),
+        "3": (1155, 322),
+        "5": (1155, 350),
+        "7": (1155, 378),
+        "9": (1155, 406),
+        "11": (1155, 434),
+        "13": (1155, 462),
+        "15": (1155, 490),
+        "17": (1155, 518),
     }
 
     for meja, (x, y) in right_side_positions.items():
         seat_map[meja] = {
             "x": x,
             "y": y,
-            "w": 16,
-            "h": 12
+            "w": 24,
+            "h": 18
         }
 
     return seat_map
 
 
-def show_highlighted_layout(image_path, group_df):
-    path = Path(image_path)
+def generate_highlighted_layout(group_df):
+    path = Path(CENTER_IMAGE)
 
     if not path.exists():
-        st.warning(f"Fail gambar '{image_path}' tidak dijumpai.")
-        return
+        return "", []
 
     image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
@@ -371,23 +370,26 @@ def show_highlighted_layout(image_path, group_df):
             w = info["w"]
             h = info["h"]
 
-            fill_color = (255, 0, 0, 90)
-            outline_color = (255, 0, 0, 255)
-
             draw.rectangle(
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=fill_color,
-                outline=outline_color,
+                fill=(255, 0, 0, 90),
+                outline=(255, 0, 0, 255),
                 width=4
             )
         else:
             missing_meja.append(meja)
 
-    highlighted_image = Image.alpha_composite(image, overlay)
-    st.image(highlighted_image, use_container_width=True)
+    highlighted = Image.alpha_composite(image, overlay)
 
-    if missing_meja:
-        st.warning(f"Meja ini belum ada coordinate dalam layout: {', '.join(missing_meja)}")
+    # Use BytesIO to save the image in memory instead of to disk
+    img_byte_arr = io.BytesIO()
+    highlighted.convert("RGB").save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)  # Reset the pointer to the start of the BytesIO object
+
+    # Convert to base64 for embedding in HTML
+    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
+
+    return layout_base64, missing_meja
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
 # =========================================================
