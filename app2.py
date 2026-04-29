@@ -277,23 +277,14 @@ def generate_seat_map():
     seat_map = {}
 
     row_y = {
-        "FL": 28,
-        "FR": 84,
-        "EL": 112,
-        "ER": 168,
-        "DL": 196,
-        "DR": 252,
-        "CL": 308,
-        "CR": 364,
-        "BL": 392,
-        "BR": 448,
-        "AL": 476,
-        "AR": 532,
+        "FL": 28, "FR": 84, "EL": 112, "ER": 168, "DL": 196, "DR": 252,
+        "CL": 308, "CR": 364, "BL": 392, "BR": 448, "AL": 476, "AR": 532,
     }
 
     start_x = 70
     gap_x = 50
 
+    # Generate seat positions for each row
     for prefix, y in row_y.items():
         for seat_no in range(20, 0, -1):
             x = start_x + (20 - seat_no) * gap_x
@@ -307,78 +298,52 @@ def generate_seat_map():
             }
 
     right_side_positions = {
-        "18": (1155, 42),
-        "16": (1155, 70),
-        "14": (1155, 98),
-        "12": (1155, 126),
-        "10": (1155, 154),
-        "8": (1155, 182),
-        "6": (1155, 210),
-        "4": (1155, 238),
-        "2": (1155, 266),
-        "1": (1155, 294),
-        "3": (1155, 322),
-        "5": (1155, 350),
-        "7": (1155, 378),
-        "9": (1155, 406),
-        "11": (1155, 434),
-        "13": (1155, 462),
-        "15": (1155, 490),
-        "17": (1155, 518),
+        "18": (1155, 42), "16": (1155, 70), "14": (1155, 98), "12": (1155, 126),
+        "10": (1155, 154), "8": (1155, 182), "6": (1155, 210), "4": (1155, 238),
+        "2": (1155, 266), "1": (1155, 294), "3": (1155, 322), "5": (1155, 350),
+        "7": (1155, 378), "9": (1155, 406), "11": (1155, 434), "13": (1155, 462),
+        "15": (1155, 490), "17": (1155, 518),
     }
 
     for meja, (x, y) in right_side_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 24,
-            "h": 18
-        }
+        seat_map[meja] = {"x": x, "y": y, "w": 24, "h": 18}
 
     return seat_map
 
-# Function to generate highlighted layout based on the MEJA data from the CSV
-def generate_highlighted_layout(group_df):
-    # Load the seating plan image (pre-existing image file)
-    path = "GAMBAR BARU 3.png"  # This is your image path (no need to upload image)
+# Function to generate the highlighted layout based on the `MEJA` for a specific `NOTEN`
+def generate_highlighted_layout(group_df, noten):
+    # Search for the record corresponding to `NOTEN`
+    person_info = group_df[group_df["NOTEN"] == noten]
+
+    if person_info.empty:
+        return None, None  # No record found
+
+    # Extract MEJA (seat) information
+    meja = person_info.iloc[0]["MEJA"]
+    
+    # Load your seating layout image
+    path = "GAMBAR BARU 3.png"  # Using the existing seating layout image
     image = Image.open(path).convert("RGBA")
-    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))  # transparent overlay
     draw = ImageDraw.Draw(overlay)
 
     # Get the seat map
     seat_map = generate_seat_map()
 
-    # Extract the MEJA values from the dataframe and highlight those seats
-    meja_list = (
-        group_df["MEJA"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .unique()
-    )
+    # Check if the MEJA exists in the seat map
+    if meja in seat_map:
+        info = seat_map[meja]
+        x, y, w, h = info["x"], info["y"], info["w"], info["h"]
 
-    missing_meja = []
-
-    # Loop through the MEJA values in the CSV and highlight ONLY those corresponding seats
-    for meja in meja_list:
-        if meja in seat_map:
-            info = seat_map[meja]
-
-            x = info["x"]
-            y = info["y"]
-            w = info["w"]
-            h = info["h"]
-
-            # Draw a semi-transparent green rectangle around the seat to highlight it
-            draw.rectangle(
-                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=(0, 255, 0, 90),  # Transparent green
-                outline=(0, 255, 0, 255),  # Solid green border
-                width=4
-            )
-        else:
-            missing_meja.append(meja)
+        # Highlight the seat with a transparent green rectangle
+        draw.rectangle(
+            [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
+            fill=(0, 255, 0, 90),  # Transparent green
+            outline=(0, 255, 0, 255),  # Solid green border
+            width=4
+        )
+    else:
+        return None, None  # If MEJA is not found in seat map
 
     # Combine the overlay with the original image
     highlighted = Image.alpha_composite(image, overlay)
@@ -386,12 +351,13 @@ def generate_highlighted_layout(group_df):
     # Save the image in memory using BytesIO
     img_byte_arr = io.BytesIO()
     highlighted.convert("RGB").save(img_byte_arr, format='PNG')
-    img_byte_arr.seek(0)  # Reset the pointer to the start of the BytesIO object
+    img_byte_arr.seek(0)  # Reset pointer to the start of the BytesIO object
 
     # Convert image to base64 for embedding in HTML or Streamlit
     layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
 
-    return layout_base64, missing_meja
+    return layout_base64, person_info.iloc[0]
+
 
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
