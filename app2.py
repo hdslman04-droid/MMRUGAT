@@ -5,7 +5,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import base64
 from PIL import Image, ImageDraw
-import io
 
 st.set_page_config(
     page_title="MMR KPA (GAJI)",
