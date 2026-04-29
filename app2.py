@@ -75,7 +75,7 @@ DATA_FILE = "SEATING PLAN MMR PENGHARGAAN 2026 2.csv"
 ATTENDANCE_FILE = "attendance_records.csv"
 
 LOGO_UGAT = "Logo-UGAT.png"
-CENTER_IMAGE = "gambar baru.jpeg"
+CENTER_IMAGE = "GAMBAR BARU 3.png"
 
 DEFAULT_HOST_PASSWORD = "salman"
 
