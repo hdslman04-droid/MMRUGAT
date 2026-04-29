@@ -306,10 +306,12 @@ def generate_seat_map():
 def show_highlighted_layout(image_path):
     path = Path(image_path)
 
+    # Check if the image path is valid
     if not path.exists():
         print(f"Error: Image file '{image_path}' not found.")
         return
 
+    # Open the image and prepare for drawing
     image = Image.open(path).convert("RGBA")
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
@@ -327,11 +329,14 @@ def show_highlighted_layout(image_path):
     # Combine the overlay with the original image
     highlighted_image = Image.alpha_composite(image, overlay)
 
-    # Show the final image with highlights
+    # Save and show the final image with highlights
     highlighted_image.show()
+    # Optionally, save the image with highlights
+    highlighted_image.save("highlighted_seat_map.png")
 
-# Example usage
-image_path = "path_to_your_image.png"  # Replace with your image file path
+
+# Replace with the actual path to your image
+image_path = "/mnt/data/GAMBAR BARU 3(5).png"  # Example image path
 show_highlighted_layout(image_path)
 
 # =========================================================
