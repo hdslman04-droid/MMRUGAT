@@ -273,7 +273,7 @@ def get_base64_image(image_path):
 # =========================================================
 # HIGHLIGHT MEJA DALAM LAYOUT
 # =========================================================
-def generate_seat_map_corrected():
+def generate_seat_map():
     seat_map = {}
 
     # Y coordinate for each row (adjusted based on the image layout)
@@ -357,7 +357,7 @@ def generate_seat_map_corrected():
     return seat_map
 
 
-def generate_highlighted_layout_corrected(group_df, image_path):
+def generate_highlighted_layout(group_df, image_path):
     path = Path(image_path)
 
     if not path.exists():
@@ -367,7 +367,7 @@ def generate_highlighted_layout_corrected(group_df, image_path):
     overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
-    seat_map = generate_seat_map_corrected()
+    seat_map = generate_seat_map()
 
     meja_list = (
         group_df["MEJA"]
