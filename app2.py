@@ -247,8 +247,8 @@ def get_base64_image(image_path):
 # HIGHLIGHT FUNCTIONS
 # HIGHLIGHT ONLY TABLE NUMBER BOXES FROM THE FILTERED GROUP
 # =========================================================
-def normalize_meja_value(value):
-    value = str(value).strip().upper()
+def normalize_meja(value):
+    value = str(value).strip()
     if value.endswith(".0"):
         value = value[:-2]
     return value
@@ -257,29 +257,33 @@ def normalize_meja_value(value):
 def generate_seat_map(img_w, img_h):
     seat_map = {}
 
-    # Right-side numbered boxes based on the new image
-    # These are approximate CENTER positions using image ratio
-    right_side_ratio_positions = {
-        "13": (0.951, 0.151),
-        "11": (0.951, 0.208),
-        "9":  (0.951, 0.265),
-        "7":  (0.951, 0.322),
-        "5":  (0.951, 0.379),
-        "3":  (0.951, 0.436),
-        "1":  (0.951, 0.493),
-        "2":  (0.951, 0.550),
-        "4":  (0.951, 0.607),
-        "6":  (0.951, 0.664),
-        "8":  (0.951, 0.721),
-        "10": (0.951, 0.778),
-        "12": (0.951, 0.835),
-        "14": (0.951, 0.892),
+    # =========================================================
+    # RIGHT SIDE NUMBER BOXES
+    # Based on the NEW image you gave
+    # These are CENTER positions using image ratios
+    # =========================================================
+    vip_number_positions = {
+        "13": (0.9434, 0.1484),
+        "11": (0.9434, 0.1918),
+        "9":  (0.9434, 0.2344),
+        "7":  (0.9434, 0.2769),
+        "5":  (0.9434, 0.3186),
+        "3":  (0.9434, 0.3611),
+        "1":  (0.9434, 0.4036),
+        "2":  (0.9434, 0.4514),
+        "4":  (0.9434, 0.4983),
+        "6":  (0.9434, 0.5417),
+        "8":  (0.9434, 0.5851),
+        "10": (0.9434, 0.6293),
+        "12": (0.9434, 0.6727),
+        "14": (0.9434, 0.7170),
     }
 
+    # box size for the right-side number labels
     box_w = int(img_w * 0.024)
-    box_h = int(img_h * 0.040)
+    box_h = int(img_h * 0.032)
 
-    for meja, (x_ratio, y_ratio) in right_side_ratio_positions.items():
+    for meja, (x_ratio, y_ratio) in vip_number_positions.items():
         seat_map[meja] = {
             "x": int(img_w * x_ratio),
             "y": int(img_h * y_ratio),
@@ -308,7 +312,7 @@ def generate_highlighted_layout(group_df):
         group_df["MEJA"]
         .dropna()
         .astype(str)
-        .apply(normalize_meja_value)
+        .apply(normalize_meja)
         .unique()
     )
 
@@ -327,7 +331,7 @@ def generate_highlighted_layout(group_df):
                 [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
                 fill=(255, 0, 0, 90),
                 outline=(255, 0, 0, 255),
-                width=4
+                width=3
             )
         else:
             missing_meja.append(meja)
