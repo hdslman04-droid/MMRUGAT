@@ -23,7 +23,7 @@ st.markdown("""
     }
 
     .stMarkdown h1, .stMarkdown h2 {
-        font-size: 18px; /* Adjust heading size */
+        font-size: 30px; /* Adjust heading size */
     }
 
     .stMarkdown p {
