@@ -389,17 +389,17 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-    layout_base64, missing_meja = generate_highlighted_layout(df)
+       layout_base64, missing_meja = generate_highlighted_layout(df)
 
-    if layout_base64:
-        # Display the image in Streamlit
-        st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
+        if layout_base64:
+            # Display the image in Streamlit
+            st.image(f"data:image/png;base64,{layout_base64}", use_column_width=True)
 
-        # Display missing seats if any
-        if missing_meja:
-            st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
-    else:
-        st.error("Error generating the highlighted image.")
+            # Display missing seats if any
+            if missing_meja:
+                st.warning(f"The following seats are missing from the layout: {', '.join(missing_meja)}")
+        else:
+            st.error("Error generating the highlighted image.")
         
         st.markdown(
             f"<div class='time-box'>Last Updated: {get_file_updated_time()}</div>",
