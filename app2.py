@@ -488,7 +488,8 @@ if img_base64:
     ">
         <img src="data:image/png;base64,{img_base64}" width="50">
         <h2 style="margin:0; color:white;">
-            Majlis Makan Malam Rejimental Penghargaan Brigedier Jeneral Dato' Zamzuri bin Harun
+            Majlis Makan Malam Rejimental Penghargaan 
+            Brigedier Jeneral Dato' Zamzuri bin Harun
         </h2>
     </div>
     """, unsafe_allow_html=True)
@@ -514,13 +515,13 @@ else:
 # SEARCH SECTION
 # =========================================================
 st.markdown(
-    "<h3 style='color:#38bdf8;'>Carian Nombor Tentera</h3>",
+    "<h3 style='color:#38bdf8;'>LOGIN</h3>",
     unsafe_allow_html=True
 )
 
 search_no = st.text_input(
-    "Masukkan No Tentera",
-    max_chars=10,
+    "Nombor Tentera:",
+    max_chars=7,
     placeholder="Contoh: 3004463"
 )
 
@@ -537,7 +538,7 @@ if search_no:
         bil_value = str(result_df.iloc[0]["BIL"]).strip()
         group_df = df[df["BIL"].astype(str).str.strip() == bil_value].copy()
 
-        st.success(f"Rekod dijumpai. BIL: {bil_value}")
+        st.success(f"Rekod dijumpai")
 
         st.markdown("### Maklumat Kehadiran")
 
