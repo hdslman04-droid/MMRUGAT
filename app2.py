@@ -335,6 +335,24 @@ def generate_seat_map():
             "h": 12
         }
 
+    # Adjusted positions for the red box (BRASS BAND & LIVE BAND section)
+    red_box_positions = {
+        "CL": (140, 410),
+        "CR": (1160, 410),
+        "BL": (140, 490),
+        "BR": (1160, 490),
+        "AL": (140, 570),
+        "AR": (1160, 570),
+    }
+
+    for meja, (x, y) in red_box_positions.items():
+        seat_map[meja] = {
+            "x": x,
+            "y": y,
+            "w": 16,
+            "h": 12
+        }
+
     return seat_map
 
 
