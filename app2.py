@@ -275,85 +275,34 @@ def get_base64_image(image_path):
 def generate_seat_map():
     seat_map = {}
 
-    # Y coordinate based on the new image layout
-    row_y = {
-        "FL": 120,
-        "FR": 160,
-        "EL": 200,
-        "ER": 240,
-        "DL": 280,
-        "DR": 320,
-        "CL": 360,
-        "CR": 400,
-        "BL": 440,
-        "BR": 480,
-        "AL": 520,
-        "AR": 560,
+    # Coordinates for highlighting seats (X, Y, Width, Height)
+    highlight_coordinates_new = {
+        1: (80, 120, 50, 30),
+        2: (150, 120, 50, 30),
+        3: (220, 120, 50, 30),
+        4: (290, 120, 50, 30),
+        5: (360, 120, 50, 30),
+        6: (430, 120, 50, 30),
+        7: (500, 120, 50, 30),
+        8: (570, 120, 50, 30),
+        9: (640, 120, 50, 30),
+        10: (710, 120, 50, 30),
+        11: (780, 120, 50, 30),
+        12: (850, 120, 50, 30),
+        13: (920, 120, 50, 30),
+        14: (990, 120, 50, 30),
+        15: (1060, 120, 50, 30),
+        16: (1130, 120, 50, 30),
+        17: (1200, 120, 50, 30),
+        18: (1270, 120, 50, 30),
+        19: (1340, 120, 50, 30),
+        20: (1410, 120, 50, 30)
     }
 
-    # X coordinates for seats (1 -> 20)
-    x_positions = [
-        180, 220, 260, 300, 340, 380, 420, 460, 500, 540, 580, 620, 660, 700, 740, 780, 820, 860, 900, 940
-    ]
-
-    # Main seats (FL, FR, etc.)
-    for prefix, y in row_y.items():
-        for idx, seat_no in enumerate(range(20, 0, -1)):
-            seat_id = f"{prefix}{seat_no}"
-            x = x_positions[idx]
-
-            seat_map[seat_id] = {
-                "x": x,
-                "y": y,
-                "w": 22,
-                "h": 12
-            }
-
-    # Right side seats (1, 2, 3, etc.)
-    right_side_positions = {
-        "13": (1160, 200),
-        "11": (1160, 220),
-        "9":  (1160, 240),
-        "7":  (1160, 260),
-        "5":  (1160, 280),
-        "3":  (1160, 300),
-        "1":  (1160, 320),
-        "2":  (1160, 340),
-        "4":  (1160, 360),
-        "6":  (1160, 380),
-        "8":  (1160, 400),
-        "10": (1160, 420),
-        "12": (1160, 440),
-        "14": (1160, 460),
-    }
-
-    for meja, (x, y) in right_side_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 16,
-            "h": 12
-        }
-
-    # Adjusted positions for the red box (for DL11 and DL12 only)
-    red_box_positions = {
-        "DL11": (500, 280),  # X, Y for DL11
-        "DL12": (540, 280),  # X, Y for DL12
-    }
-
-    # Add the red box for DL11 and DL12 only
-    for meja, (x, y) in red_box_positions.items():
-        seat_map[meja] = {
-            "x": x,
-            "y": y,
-            "w": 32,  # Adjust width to cover both seats
-            "h": 12   # Adjust height to fit the seats
-        }
-
-    return seat_map
+    return highlight_coordinates_new
 
 
-def show_highlighted_layout(image_path, group_df):
+def show_highlighted_layout(image_path):
     path = Path(image_path)
 
     if not path.exists():
@@ -366,51 +315,19 @@ def show_highlighted_layout(image_path, group_df):
 
     seat_map = generate_seat_map()
 
-    meja_list = (
-        group_df["MEJA"]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .str.upper()
-        .unique()
-    )
+    # Iterate through seat numbers and highlight them
+    for seat_number, (x, y, w, h) in seat_map.items():
+        fill_color = (255, 0, 0, 90)  # Semi-transparent red fill
+        outline_color = (255, 0, 0, 255)  # Solid red outline
 
-    missing_meja = []
+        # Draw the rectangle for each seat
+        draw.rectangle([x, y, x + w, y + h], fill=fill_color, outline=outline_color, width=4)
 
-    for meja in meja_list:
-        if meja in seat_map:
-            info = seat_map[meja]
-
-            x = info["x"]
-            y = info["y"]
-            w = info["w"]
-            h = info["h"]
-
-            fill_color = (255, 0, 0, 90)
-            outline_color = (255, 0, 0, 255)
-
-            draw.rectangle(
-                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=fill_color,
-                outline=outline_color,
-                width=4
-            )
-        else:
-            missing_meja.append(meja)
-
-    # Highlight the red box section
-    red_box = seat_map.get("DL11")  # Since both DL11 and DL12 are part of the same red box
-    if red_box:
-        x, y, w, h = red_box["x"], red_box["y"], red_box["w"], red_box["h"]
-        red_fill = (255, 0, 0, 90)
-        red_outline = (255, 0, 0, 255)
-        draw.rectangle([x, y, x + w, y + h], fill=red_fill, outline=red_outline, width=4)
-
+    # Combine the overlay with the original image
     highlighted_image = Image.alpha_composite(image, overlay)
-    st.image(highlighted_image, use_container_width=True)
 
-    if missing_meja:
-        st.warning(f"Meja ini belum ada coordinate dalam layout: {', '.join(missing_meja)}")
+    # Show the final image with highlights
+    st.image(highlighted_image, use_container_width=True)
 
 # =========================================================
 # SIDEBAR HOST LOGIN + UPLOAD
