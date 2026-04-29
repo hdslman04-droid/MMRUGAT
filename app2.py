@@ -77,7 +77,7 @@ ATTENDANCE_FILE = "attendance_records.csv"
 LOGO_UGAT = "Logo-UGAT.png"
 CENTER_IMAGE = "LAYOUT SUSUNAN.png"
 
-DEFAULT_HOST_PASSWORD = "host123"
+DEFAULT_HOST_PASSWORD = "salman"
 
 required_cols = ["BIL", "NOTEN", "NAMA", "MENU", "MEJA"]
 
@@ -430,7 +430,7 @@ if st.session_state.host_logged_in:
                     "Data tetamu telah dikemaskini dan rekod kehadiran telah direset."
                 )
 
-                st.rerun()
+               st.experimental_rerun()
 
         except Exception as e:
             st.sidebar.error(f"Fail tidak dapat dibaca: {e}")
