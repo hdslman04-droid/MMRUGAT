@@ -248,103 +248,123 @@ def get_base64_image(image_path):
 # HIGHLIGHT ONLY TABLE NUMBER BOXES FROM THE FILTERED GROUP
 # =========================================================
 def normalize_meja(value):
-    value = str(value).strip()
+    value = str(value).strip().upper()
+
     if value.endswith(".0"):
         value = value[:-2]
+
+    value = value.replace(" ", "")
     return value
 
 
+# =========================================================
+# GENERATE FULL SEAT MAP
+# Covers:
+# - FL20 until FL1
+# - FR20 until FR1
+# - ...
+# - AL20 until AL1
+# - AR20 until AR1
+# - VIP side 1,2,3...14
+# =========================================================
 def generate_seat_map(img_w, img_h):
     seat_map = {}
 
-    # =========================================================
-    # RIGHT SIDE NUMBER BOXES
-    # Based on the NEW image you gave
-    # These are CENTER positions using image ratios
-    # =========================================================
-    vip_number_positions = {
-        "13": (0.9434, 0.1484),
-        "11": (0.9434, 0.1918),
-        "9":  (0.9434, 0.2344),
-        "7":  (0.9434, 0.2769),
-        "5":  (0.9434, 0.3186),
-        "3":  (0.9434, 0.3611),
-        "1":  (0.9434, 0.4036),
-        "2":  (0.9434, 0.4514),
-        "4":  (0.9434, 0.4983),
-        "6":  (0.9434, 0.5417),
-        "8":  (0.9434, 0.5851),
-        "10": (0.9434, 0.6293),
-        "12": (0.9434, 0.6727),
-        "14": (0.9434, 0.7170),
+    # -----------------------------------------------------
+    # HALL ROW X CENTERS
+    # LEFT -> RIGHT in the image = seat 20 -> seat 1
+    # Based on your new image
+    # -----------------------------------------------------
+    hall_x_centers_ref = [
+        210, 287, 362, 438, 512,
+        587, 662, 737, 810, 885,
+        958, 1033, 1107, 1182, 1257,
+        1331, 1406, 1481, 1555, 1629
+    ]
+
+    # -----------------------------------------------------
+    # HALL ROW Y CENTERS
+    # Based on the new image
+    # -----------------------------------------------------
+    hall_row_y_ref = {
+        "FL": 58,
+        "FR": 159,
+        "EL": 221,
+        "ER": 321,
+        "DL": 379,
+        "DR": 480,
+        "CL": 583,
+        "CR": 683,
+        "BL": 738,
+        "BR": 837,
+        "AL": 898,
+        "AR": 998,
     }
 
-    # box size for the right-side number labels
-    box_w = int(img_w * 0.024)
-    box_h = int(img_h * 0.032)
+    # Box size for hall seats
+    hall_box_w_ref = 68
+    hall_box_h_ref = 32
 
-    for meja, (x_ratio, y_ratio) in vip_number_positions.items():
+    hall_box_w = int(round(hall_box_w_ref * img_w / REF_W))
+    hall_box_h = int(round(hall_box_h_ref * img_h / REF_H))
+
+    # Create coordinates for FL20 until AR1
+    for prefix, y_ref in hall_row_y_ref.items():
+        y = int(round(y_ref * img_h / REF_H))
+
+        for i, x_ref in enumerate(hall_x_centers_ref):
+            seat_no = 20 - i
+            x = int(round(x_ref * img_w / REF_W))
+
+            seat_id = f"{prefix}{seat_no}"
+
+            seat_map[seat_id] = {
+                "x": x,
+                "y": y,
+                "w": hall_box_w,
+                "h": hall_box_h
+            }
+
+    # -----------------------------------------------------
+    # VIP RIGHT SIDE NUMBER BOXES
+    # Correct order based on the new image
+    # -----------------------------------------------------
+    vip_x_ref = 1932
+    vip_y_ref = {
+        "13": 171,
+        "11": 221,
+        "9": 270,
+        "7": 319,
+        "5": 367,
+        "3": 416,
+        "1": 465,
+        "2": 520,
+        "4": 574,
+        "6": 624,
+        "8": 674,
+        "10": 725,
+        "12": 775,
+        "14": 826,
+    }
+
+    vip_box_w_ref = 44
+    vip_box_h_ref = 32
+
+    vip_x = int(round(vip_x_ref * img_w / REF_W))
+    vip_box_w = int(round(vip_box_w_ref * img_w / REF_W))
+    vip_box_h = int(round(vip_box_h_ref * img_h / REF_H))
+
+    for meja, y_ref in vip_y_ref.items():
+        y = int(round(y_ref * img_h / REF_H))
+
         seat_map[meja] = {
-            "x": int(img_w * x_ratio),
-            "y": int(img_h * y_ratio),
-            "w": box_w,
-            "h": box_h
+            "x": vip_x,
+            "y": y,
+            "w": vip_box_w,
+            "h": vip_box_h
         }
 
     return seat_map
-
-
-def generate_highlighted_layout(group_df):
-    path = Path(CENTER_IMAGE)
-
-    if not path.exists():
-        return "", []
-
-    image = Image.open(path).convert("RGBA")
-    img_w, img_h = image.size
-
-    overlay = Image.new("RGBA", image.size, (255, 255, 255, 0))
-    draw = ImageDraw.Draw(overlay)
-
-    seat_map = generate_seat_map(img_w, img_h)
-
-    meja_list = (
-        group_df["MEJA"]
-        .dropna()
-        .astype(str)
-        .apply(normalize_meja)
-        .unique()
-    )
-
-    missing_meja = []
-
-    for meja in meja_list:
-        if meja in seat_map:
-            info = seat_map[meja]
-
-            x = info["x"]
-            y = info["y"]
-            w = info["w"]
-            h = info["h"]
-
-            draw.rectangle(
-                [x - w // 2, y - h // 2, x + w // 2, y + h // 2],
-                fill=(255, 0, 0, 90),
-                outline=(255, 0, 0, 255),
-                width=3
-            )
-        else:
-            missing_meja.append(meja)
-
-    highlighted = Image.alpha_composite(image, overlay)
-
-    img_byte_arr = io.BytesIO()
-    highlighted.convert("RGB").save(img_byte_arr, format="PNG")
-    img_byte_arr.seek(0)
-
-    layout_base64 = base64.b64encode(img_byte_arr.getvalue()).decode()
-
-    return layout_base64, missing_meja
 
 
 # =========================================================
