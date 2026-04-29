@@ -597,7 +597,7 @@ if search_no:
         st.table(group_df[display_cols])
 
         st.markdown("### Pelan Kedudukan Dewan")
-    layout_base64, missing_meja = generate_highlighted_layout(df)
+    layout_base64, missing_meja = generate_highlighted_layout(group_df)
 
     if layout_base64:
         # Display the image in Streamlit
