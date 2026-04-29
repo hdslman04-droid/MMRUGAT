@@ -294,6 +294,7 @@ def generate_seat_map():
     start_x = 70
     gap_x = 50
 
+    # Generate seat positions for each row
     for prefix, y in row_y.items():
         for seat_no in range(20, 0, -1):
             x = start_x + (20 - seat_no) * gap_x
@@ -337,7 +338,7 @@ def generate_seat_map():
 
     return seat_map
 
-# Function to highlight the layout with specific seats (MEJA) based on the CSV data
+# Function to generate highlighted layout based on the MEJA data from the CSV
 def generate_highlighted_layout(group_df):
     # Load the seating plan image
     path = "GAMBAR BARU 3.png"  # This is your image path (no need to upload image)
@@ -348,7 +349,7 @@ def generate_highlighted_layout(group_df):
     # Get the seat map
     seat_map = generate_seat_map()
 
-    # Extract the seat IDs (MEJA) from the dataframe
+    # Extract the MEJA values from the dataframe and highlight those seats
     meja_list = (
         group_df["MEJA"]
         .dropna()
