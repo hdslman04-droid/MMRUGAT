@@ -597,12 +597,12 @@ else:
 # SEARCH SECTION
 # =========================================================
 st.markdown(
-    "<h3 style='color:#38bdf8;'>LOGIN</h3>",
+    "<h3 style='color:#38bdf8;'>Masukkan Nombor Tentera</h3>",
     unsafe_allow_html=True
 )
 
 search_no = st.text_input(
-    "Nombor Tentera:",
+    "",
     max_chars=20,
     placeholder="Contoh: 3004463"
 )
