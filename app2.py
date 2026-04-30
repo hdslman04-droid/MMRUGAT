@@ -600,12 +600,7 @@ st.markdown(
     "<h3 style='color:#ffff00;'>Masukkan Nombor Tentera</h3>",
     unsafe_allow_html=True
 )
-
-search_no = st.text_input(
-    "",
-    max_chars=20,
-    placeholder="Contoh: 3004463"
-)
+search_no = st.text_input("",max_chars=20,placeholder="Contoh: 3004463")
 
 if search_no:
     search_value = search_no.strip()
