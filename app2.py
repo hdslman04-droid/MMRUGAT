@@ -602,7 +602,7 @@ st.markdown(
 )
 
 search_no = st.text_input(
-    ,
+    "",
     max_chars=20,
     placeholder="Contoh: 3004463"
 )
